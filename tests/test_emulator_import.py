@@ -49,7 +49,7 @@ def _require_device_and_app():
 
 @pytest.mark.parametrize("fixture_name", [
     "flow-beginning-app-kill.flo",
-    "android-auto-flitsmeister.flo",
+    "android-auto-app-toggle.flo",
     "toast-show.flo",
     "sms-send.flo",
     "variable-assign.flo",

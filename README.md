@@ -30,7 +30,7 @@ confirmed accepted by the app itself (see "Testing against the real app"):
 - `BatteryLevel` ("Battery level")
 - `HttpRequest` ("HTTP request")
 
-`android-auto-flitsmeister.flo` (`FlowBeginning` → `ActivityStart` → `Delay`
+`android-auto-app-toggle.flo` (`FlowBeginning` → `ActivityStart` → `Delay`
 → `CarModeEnabled`) was additionally confirmed to run correctly end-to-end,
 not just import cleanly, on a real device.
 
@@ -66,10 +66,10 @@ Full details and per-block field layouts are documented in the
 from automate_flo import FlowBeginning, ActivityStart, Delay, CarModeEnabled, AppKill, write_flow
 
 begin = FlowBeginning(stmt_id=1)
-start = ActivityStart(stmt_id=2, package_name="nl.flitsmeister", cell_y=6)
+start = ActivityStart(stmt_id=2, package_name="com.example.targetapp", cell_y=6)
 delay = Delay(stmt_id=3, seconds=2.0, cell_y=12)
 car = CarModeEnabled(stmt_id=4, cell_y=18)
-kill = AppKill(stmt_id=5, package_name="nl.flitsmeister", cell_x=4, cell_y=24)
+kill = AppKill(stmt_id=5, package_name="com.example.targetapp", cell_x=4, cell_y=24)
 
 begin.on_complete = start
 start.on_complete = delay

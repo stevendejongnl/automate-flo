@@ -20,6 +20,10 @@ from automate_flo import (
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 
+# All fixtures use placeholder data (example.com, com.example.*, fictional
+# NANP reserved numbers 555-0100..0199) -- none of it is real.
+PKG = "com.example.targetapp"
+
 
 def test_roundtrip_flow_beginning_app_kill_byte_exact():
     original = (FIXTURES / "flow-beginning-app-kill.flo").read_bytes()
@@ -29,23 +33,23 @@ def test_roundtrip_flow_beginning_app_kill_byte_exact():
     assert isinstance(fb, FlowBeginning)
     ak = fb.on_complete
     assert isinstance(ak, AppKill)
-    assert ak.package_name == "nl.flitsmeister"
+    assert ak.package_name == PKG
     assert ak.on_complete is None
 
     fb2 = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
-    ak2 = AppKill(stmt_id=2, package_name="nl.flitsmeister", cell_x=0, cell_y=6)
+    ak2 = AppKill(stmt_id=2, package_name=PKG, cell_x=0, cell_y=6)
     fb2.on_complete = ak2
 
     rebuilt = write_flow([fb2, ak2], next_id=2)
     assert rebuilt == original
 
 
-def test_android_auto_flitsmeister_flow_self_consistent():
+def test_android_auto_app_toggle_flow_self_consistent():
     begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
-    start = ActivityStart(stmt_id=2, package_name="nl.flitsmeister", cell_x=0, cell_y=6)
+    start = ActivityStart(stmt_id=2, package_name=PKG, cell_x=0, cell_y=6)
     delay = Delay(stmt_id=3, seconds=2.0, cell_x=0, cell_y=12)
     car = CarModeEnabled(stmt_id=4, cell_x=0, cell_y=18)
-    kill = AppKill(stmt_id=5, package_name="nl.flitsmeister", cell_x=4, cell_y=24)
+    kill = AppKill(stmt_id=5, package_name=PKG, cell_x=4, cell_y=24)
 
     begin.on_complete = start
     start.on_complete = delay
@@ -57,20 +61,20 @@ def test_android_auto_flitsmeister_flow_self_consistent():
 
     # Confirmed device-verified: this exact flow was imported and run
     # successfully in the real Automate app on Android 17.
-    expected = (FIXTURES / "android-auto-flitsmeister.flo").read_bytes()
+    expected = (FIXTURES / "android-auto-app-toggle.flo").read_bytes()
     assert data == expected
 
     reparsed = parse_flow(data)
     r_begin = reparsed["blocks"][0]
     r_start = r_begin.on_complete
-    assert isinstance(r_start, ActivityStart) and r_start.package_name == "nl.flitsmeister"
+    assert isinstance(r_start, ActivityStart) and r_start.package_name == PKG
     r_delay = r_start.on_complete
     assert isinstance(r_delay, Delay) and r_delay.seconds == 2.0
     r_car = r_delay.on_complete
     assert isinstance(r_car, CarModeEnabled)
     assert r_car.on_positive is r_delay
     r_kill = r_car.on_negative
-    assert isinstance(r_kill, AppKill) and r_kill.package_name == "nl.flitsmeister"
+    assert isinstance(r_kill, AppKill) and r_kill.package_name == PKG
 
 
 # Each test below round-trips against a fixture that was independently
@@ -88,7 +92,8 @@ def test_toast_show_byte_exact():
 
 def test_sms_send_byte_exact():
     begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
-    sms = SmsSend(stmt_id=2, phone_number="+31612345678", message="test", cell_x=0, cell_y=6)
+    # +1-555-0100..0199 is reserved by NANP for fictional use.
+    sms = SmsSend(stmt_id=2, phone_number="+15555550123", message="test", cell_x=0, cell_y=6)
     begin.on_complete = sms
 
     data = write_flow([begin, sms], next_id=2)
@@ -107,7 +112,7 @@ def test_variable_assign_byte_exact():
 def test_battery_level_byte_exact():
     begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
     bl = BatteryLevel(stmt_id=2, cell_x=0, cell_y=6)
-    kill = AppKill(stmt_id=3, package_name="nl.flitsmeister", cell_x=0, cell_y=12)
+    kill = AppKill(stmt_id=3, package_name=PKG, cell_x=0, cell_y=12)
     begin.on_complete = bl
     bl.on_positive = kill
     bl.on_negative = None
