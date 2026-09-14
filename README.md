@@ -13,7 +13,7 @@ Android 17 emulator.
 
 ## Status
 
-Supports 13 block types. Every one below has a fixture in `tests/fixtures/`
+Supports 25 block types. Every one below has a fixture in `tests/fixtures/`
 that was pushed to a real Automate install on an Android emulator via adb and
 confirmed accepted by the app itself (see "Testing against the real app"):
 
@@ -31,6 +31,19 @@ confirmed accepted by the app itself (see "Testing against the real app"):
 - `BluetoothDeviceConnected` ("Bluetooth device connected?")
 - `BatteryLevel` ("Battery level")
 - `HttpRequest` ("HTTP request")
+- `ExpressionDecision` ("Expression")
+- `Label` (a connectable jump-target anchor; `Goto`, the block that jumps
+  *to* one, is not implemented — see the module docstring)
+- `ClipboardSet` ("Set clipboard")
+- `ClipboardGet` ("Get clipboard")
+- `WifiEnabled` ("Wifi enabled?")
+- `WifiSetState` ("Set wifi state")
+- `BluetoothEnabled` ("Bluetooth enabled?")
+- `BluetoothSetState` ("Set bluetooth state")
+- `ScreenBrightness` ("Screen brightness")
+- `ScreenBrightnessSet` ("Set screen brightness")
+- `DeviceKeepAwake` ("Keep device awake")
+- `LogAppend` ("Append to log")
 
 `android-auto-app-toggle.flo` (`FlowBeginning` → `ActivityStart` → `Delay`
 → `CarModeEnabled`) was additionally confirmed to run correctly end-to-end,

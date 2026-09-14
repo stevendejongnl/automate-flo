@@ -5,15 +5,29 @@ from automate_flo import (
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
+    BluetoothEnabled,
+    BluetoothSetState,
     CarModeEnabled,
+    ClipboardGet,
+    ClipboardSet,
     Delay,
+    DeviceKeepAwake,
+    ExpressionDecision,
     FlowBeginning,
     HttpRequest,
+    Label,
+    LogAppend,
     NotificationShow,
+    ScreenBrightness,
+    ScreenBrightnessSet,
     SmsSend,
+    StringExpr,
     ToastShow,
     VariableAssign,
+    VariableExpr,
+    WifiEnabled,
     WifiNetworkConnected,
+    WifiSetState,
     parse_flow,
     write_flow,
 )
@@ -155,3 +169,111 @@ def test_http_request_byte_exact():
 
     data = write_flow([begin, hr], next_id=2)
     assert data == (FIXTURES / "http-request.flo").read_bytes()
+
+
+def test_expression_decision_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ed = ExpressionDecision(stmt_id=2, expression=StringExpr("true"), cell_x=0, cell_y=6)
+    begin.on_complete = ed
+
+    data = write_flow([begin, ed], next_id=2)
+    assert data == (FIXTURES / "expression-decision.flo").read_bytes()
+
+
+def test_label_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    lbl = Label(stmt_id=2, value=StringExpr("myLabel"), cell_x=0, cell_y=6)
+    begin.on_complete = lbl
+
+    data = write_flow([begin, lbl], next_id=2)
+    assert data == (FIXTURES / "label.flo").read_bytes()
+
+
+def test_clipboard_set_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    cs = ClipboardSet(stmt_id=2, text="hello clipboard", cell_x=0, cell_y=6)
+    begin.on_complete = cs
+
+    data = write_flow([begin, cs], next_id=2)
+    assert data == (FIXTURES / "clipboard-set.flo").read_bytes()
+
+
+def test_clipboard_get_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    cg = ClipboardGet(stmt_id=2, var_content=VariableExpr("clip"), cell_x=0, cell_y=6)
+    begin.on_complete = cg
+
+    data = write_flow([begin, cg], next_id=2)
+    assert data == (FIXTURES / "clipboard-get.flo").read_bytes()
+
+
+def test_wifi_enabled_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    we = WifiEnabled(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = we
+
+    data = write_flow([begin, we], next_id=2)
+    assert data == (FIXTURES / "wifi-enabled.flo").read_bytes()
+
+
+def test_wifi_set_state_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ws = WifiSetState(stmt_id=2, state=True, cell_x=0, cell_y=6)
+    begin.on_complete = ws
+
+    data = write_flow([begin, ws], next_id=2)
+    assert data == (FIXTURES / "wifi-set-state.flo").read_bytes()
+
+
+def test_bluetooth_enabled_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    be = BluetoothEnabled(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = be
+
+    data = write_flow([begin, be], next_id=2)
+    assert data == (FIXTURES / "bluetooth-enabled.flo").read_bytes()
+
+
+def test_bluetooth_set_state_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    bs = BluetoothSetState(stmt_id=2, state=True, cell_x=0, cell_y=6)
+    begin.on_complete = bs
+
+    data = write_flow([begin, bs], next_id=2)
+    assert data == (FIXTURES / "bluetooth-set-state.flo").read_bytes()
+
+
+def test_screen_brightness_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    sb = ScreenBrightness(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = sb
+
+    data = write_flow([begin, sb], next_id=2)
+    assert data == (FIXTURES / "screen-brightness.flo").read_bytes()
+
+
+def test_screen_brightness_set_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    sbs = ScreenBrightnessSet(stmt_id=2, level=50.0, cell_x=0, cell_y=6)
+    begin.on_complete = sbs
+
+    data = write_flow([begin, sbs], next_id=2)
+    assert data == (FIXTURES / "screen-brightness-set.flo").read_bytes()
+
+
+def test_device_keep_awake_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    dka = DeviceKeepAwake(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = dka
+
+    data = write_flow([begin, dka], next_id=2)
+    assert data == (FIXTURES / "device-keep-awake.flo").read_bytes()
+
+
+def test_log_append_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    la = LogAppend(stmt_id=2, message="hello from automate-flo", cell_x=0, cell_y=6)
+    begin.on_complete = la
+
+    data = write_flow([begin, la], next_id=2)
+    assert data == (FIXTURES / "log-append.flo").read_bytes()

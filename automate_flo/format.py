@@ -69,6 +69,18 @@ on an Android-17 emulator):
   1153  BluetoothDeviceConnected ("Bluetooth device connected?")
   1021  BatteryLevel ("Battery level")
   1087  HttpRequest ("HTTP request")
+  1058  ExpressionDecision ("Expression")
+  1288  Label ("Label")
+  1033  ClipboardSet ("Set clipboard")
+  1032  ClipboardGet ("Get clipboard")
+  1147  WifiEnabled ("Wifi enabled?")
+  1149  WifiSetState ("Set wifi state")
+  1155  BluetoothEnabled ("Bluetooth enabled?")
+  1156  BluetoothSetState ("Set bluetooth state")
+  1113  ScreenBrightness ("Screen brightness")
+  1114  ScreenBrightnessSet ("Set screen brightness")
+  1115  DeviceKeepAwake ("Keep device awake")
+  1093  LogAppend ("Append to log")
   106   W (string literal expression wrapper, implements InterfaceC1601v0)
   104   J (double literal expression wrapper -- plain 8-byte BE double, no
         length prefix; used for Delay's "duration" field, e.g. seconds)
@@ -78,6 +90,9 @@ on an Android-17 emulator):
         fields)
   25    java.lang.String (raw String object, distinct from the "W" expr wrapper
         -- used in some other slots, not needed for our target flow)
+  1     Boolean (boxed java.lang.Boolean, single 0/1 byte, no length prefix --
+        used directly as a boolean-valued expression, e.g.
+        SetStateAction.state)
 
 Field layouts (fully traced from source; "OBJECT ref, null" means the field
 is legal to omit -- Automate accepted every generated sample below with
@@ -156,11 +171,62 @@ these fields absent):
     saveResponse, responsePath, varResponseCode (I3.l or null),
     varResponseBody (I3.l or null), varResponseHeaders (I3.l or null)
 
+  ExpressionDecision(id=1058) extends Decision (onPositive/onNegative):
+    header, onPositive, onNegative, continuity, expression (any expression
+    object -- pass a StringExpr/DoubleExpr or None; more complex boolean
+    expressions built from expr.func.* nodes are out of scope for this
+    library's writer, but the reader will parse whatever type id it finds
+    since expression objects round-trip generically through write_object/
+    read_object)
+
+  Label(id=1288) extends Action:
+    header, onComplete, value (OBJECT ref, the label's name/id expression,
+    null legal). Goto (id=1287, the block that jumps to a Label) is NOT
+    implemented: its field layout is a uvarint count + N object-refs into
+    already-written Label nodes, plus a dynamic labelValue expression --
+    meaningfully more involved than everything else in this batch and
+    skipped for now. Label is still useful standalone as a connectable
+    no-op anchor reachable via any other block's onComplete.
+
+  ClipboardSet(id=1033) extends Action:
+    header, onComplete, text, htmlText, uri, mimeType, label, sensitive
+    (all OBJECT refs, all null legal except at least one of
+    text/htmlText/uri needed for the block to do anything at runtime)
+
+  ClipboardGet(id=1032) extends IntermittentAction extends Action:
+    header, onComplete, continuity, varContent (I3.l or null)
+
+  WifiEnabled(id=1147) extends IntermittentDecision extends Decision
+  (onPositive/onNegative): header, onPositive, onNegative, continuity --
+  no fields beyond the Decision base. BluetoothEnabled(id=1155) is
+  identical in shape (same base classes, zero extra fields).
+
+  WifiSetState(id=1149) extends SetStateAction extends Action:
+    header, onComplete, state (OBJECT ref, boolean expression).
+    BluetoothSetState(id=1156) is identical in shape.
+
+  ScreenBrightness(id=1113) extends LevelDecision extends IntermittentDecision
+  extends Decision (onPositive/onNegative):
+    header, onPositive, onNegative, continuity, minLevel, maxLevel, varLevel,
+    scale, auto, varAuto, varAdjustment
+
+  ScreenBrightnessSet(id=1114) extends Action:
+    header, onComplete, level, scale, auto, adjustment
+
+  DeviceKeepAwake(id=1115) extends Action:
+    header, onComplete, wakeState, wifiState, wakeup
+
+  LogAppend(id=1093) extends Action:
+    header, onComplete, message, whenLogging
+
 Every block above -- including the extended set (ActivityStart, Delay,
 CarModeEnabled, ToastShow, SmsSend, VariableAssign, BatteryLevel,
 WifiNetworkConnected, BluetoothDeviceConnected, NotificationShow,
-HttpRequest) -- has a fixture in tests/fixtures/ that was pushed to a real
-Automate 1.53.2 install on an Android-17 emulator via adb and confirmed
+HttpRequest, ExpressionDecision, Label, ClipboardSet, ClipboardGet,
+WifiEnabled, WifiSetState, BluetoothEnabled, BluetoothSetState,
+ScreenBrightness, ScreenBrightnessSet, DeviceKeepAwake, LogAppend) -- has a
+fixture in tests/fixtures/ that was pushed to a real Automate 1.53.2 install
+on an Android-17 emulator via adb and confirmed
 accepted (Automate's own "Import ... flow?" dialog, not a rejection); see
 tests/test_emulator_import.py. FlowBeginning->AppKill is additionally
 byte-exact-verified against an Automate-exported sample built entirely by
@@ -181,6 +247,7 @@ TYPE_CAR_MODE_ENABLED = 1201
 TYPE_STRING_EXPR = 106  # K3.W: string literal expression wrapper
 TYPE_DOUBLE_EXPR = 104  # K3.J: double literal expression wrapper
 TYPE_VARIABLE_EXPR = 102  # I3.l: mutable-variable reference (plain UTF name)
+TYPE_BOOLEAN_EXPR = 1  # Q3.g$j: boxed java.lang.Boolean, single 0/1 byte, no length prefix
 TYPE_TOAST_SHOW = 1120
 TYPE_NOTIFICATION_SHOW = 1103
 TYPE_SMS_SEND = 1122
@@ -189,6 +256,18 @@ TYPE_WIFI_NETWORK_CONNECTED = 1146
 TYPE_BLUETOOTH_DEVICE_CONNECTED = 1153
 TYPE_BATTERY_LEVEL = 1021
 TYPE_HTTP_REQUEST = 1087
+TYPE_EXPRESSION_DECISION = 1058
+TYPE_LABEL = 1288
+TYPE_CLIPBOARD_SET = 1033
+TYPE_CLIPBOARD_GET = 1032
+TYPE_WIFI_ENABLED = 1147
+TYPE_WIFI_SET_STATE = 1149
+TYPE_BLUETOOTH_ENABLED = 1155
+TYPE_BLUETOOTH_SET_STATE = 1156
+TYPE_SCREEN_BRIGHTNESS = 1113
+TYPE_SCREEN_BRIGHTNESS_SET = 1114
+TYPE_DEVICE_KEEP_AWAKE = 1115
+TYPE_LOG_APPEND = 1093
 
 
 def _zz_enc(n: int) -> int:
@@ -234,6 +313,9 @@ class ByteWriter:
 
     def write_double(self, v: float):
         self.buf += struct.pack(">d", v)
+
+    def write_bool(self, v: bool):
+        self.write_u8(1 if v else 0)
 
 
 class ByteReader:
@@ -282,6 +364,9 @@ class ByteReader:
         v = struct.unpack(">d", self.data[self.pos:self.pos + 8])[0]
         self.pos += 8
         return v
+
+    def read_bool(self) -> bool:
+        return self.read_u8() != 0
 
     def eof(self) -> bool:
         return self.pos >= len(self.data)
@@ -551,6 +636,168 @@ class HttpRequest(Block):
         self.var_response_headers = var_response_headers
 
 
+class ExpressionDecision(Block):
+    """id 1058, UI name "Expression". Extends Decision DIRECTLY (not
+    IntermittentDecision like the rest of this library's Decision-family
+    blocks) -- onPositive/onNegative, plus one generic 'expression' field,
+    but NO continuity field. Confirmed by source (class declaration is
+    `extends Decision`) and empirically: writing a continuity object here
+    (matching the other Decision blocks' shape) misaligned every field
+    after it and Automate rejected the file outright."""
+    type_id = TYPE_EXPRESSION_DECISION
+
+    def __init__(self, stmt_id, expression, cell_x=0, cell_y=0,
+                 on_positive=None, on_negative=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete=None)
+        self.on_positive = on_positive
+        self.on_negative = on_negative
+        self.expression = expression
+
+
+class Label(Block):
+    """id 1288, UI name "Label". Extends Action -- a jump target for Goto;
+    this library doesn't implement Goto (its field layout involves a
+    counted array of back-references to Label nodes plus a dynamic
+    label-value expression -- meaningfully more complex than the rest of
+    this batch, not attempted here). Label itself is just an Action with
+    one extra 'value' field (the label's name/id expression) and is useful
+    on its own as a connectable no-op anchor."""
+    type_id = TYPE_LABEL
+
+    def __init__(self, stmt_id, value=None, cell_x=0, cell_y=0, on_complete=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.value = value
+
+
+class ClipboardSet(Block):
+    """id 1033, UI name "Set clipboard". Extends Action."""
+    type_id = TYPE_CLIPBOARD_SET
+
+    def __init__(self, stmt_id, text=None, cell_x=0, cell_y=0, on_complete=None,
+                 html_text=None, uri=None, mime_type=None, label=None, sensitive=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.text = text
+        self.html_text = html_text
+        self.uri = uri
+        self.mime_type = mime_type
+        self.label = label
+        self.sensitive = sensitive
+
+
+class ClipboardGet(Block):
+    """id 1032, UI name "Get clipboard". Extends IntermittentAction."""
+    type_id = TYPE_CLIPBOARD_GET
+
+    def __init__(self, stmt_id, var_content=None, cell_x=0, cell_y=0,
+                 on_complete=None, continuity=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.continuity = continuity
+        self.var_content = var_content
+
+
+class WifiEnabled(Block):
+    """id 1147, UI name "Wifi enabled?". Extends IntermittentDecision
+    directly -- no extra fields beyond onPositive/onNegative/continuity."""
+    type_id = TYPE_WIFI_ENABLED
+
+    def __init__(self, stmt_id, cell_x=0, cell_y=0, on_positive=None,
+                 on_negative=None, continuity=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete=None)
+        self.on_positive = on_positive
+        self.on_negative = on_negative
+        self.continuity = continuity
+
+
+class WifiSetState(Block):
+    """id 1149, UI name "Set wifi state". Extends SetStateAction (Action +
+    one 'state' boolean-expression field)."""
+    type_id = TYPE_WIFI_SET_STATE
+
+    def __init__(self, stmt_id, state, cell_x=0, cell_y=0, on_complete=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.state = state
+
+
+class BluetoothEnabled(Block):
+    """id 1155, UI name "Bluetooth enabled?". Same shape as WifiEnabled --
+    bare IntermittentDecision, no extra fields."""
+    type_id = TYPE_BLUETOOTH_ENABLED
+
+    def __init__(self, stmt_id, cell_x=0, cell_y=0, on_positive=None,
+                 on_negative=None, continuity=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete=None)
+        self.on_positive = on_positive
+        self.on_negative = on_negative
+        self.continuity = continuity
+
+
+class BluetoothSetState(Block):
+    """id 1156, UI name "Set bluetooth state". Same shape as WifiSetState."""
+    type_id = TYPE_BLUETOOTH_SET_STATE
+
+    def __init__(self, stmt_id, state, cell_x=0, cell_y=0, on_complete=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.state = state
+
+
+class ScreenBrightness(Block):
+    """id 1113, UI name "Screen brightness". Extends LevelDecision (minLevel,
+    maxLevel, varLevel) plus scale/auto/varAuto/varAdjustment."""
+    type_id = TYPE_SCREEN_BRIGHTNESS
+
+    def __init__(self, stmt_id, cell_x=0, cell_y=0, on_positive=None,
+                 on_negative=None, continuity=None, min_level=None,
+                 max_level=None, var_level=None, scale=None, auto=None,
+                 var_auto=None, var_adjustment=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete=None)
+        self.on_positive = on_positive
+        self.on_negative = on_negative
+        self.continuity = continuity
+        self.min_level = min_level
+        self.max_level = max_level
+        self.var_level = var_level
+        self.scale = scale
+        self.auto = auto
+        self.var_auto = var_auto
+        self.var_adjustment = var_adjustment
+
+
+class ScreenBrightnessSet(Block):
+    """id 1114, UI name "Set screen brightness". Extends Action."""
+    type_id = TYPE_SCREEN_BRIGHTNESS_SET
+
+    def __init__(self, stmt_id, level=None, cell_x=0, cell_y=0, on_complete=None,
+                 scale=None, auto=None, adjustment=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.level = level
+        self.scale = scale
+        self.auto = auto
+        self.adjustment = adjustment
+
+
+class DeviceKeepAwake(Block):
+    """id 1115, UI name "Keep device awake". Extends Action."""
+    type_id = TYPE_DEVICE_KEEP_AWAKE
+
+    def __init__(self, stmt_id, wake_state=None, cell_x=0, cell_y=0,
+                 on_complete=None, wifi_state=None, wakeup=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.wake_state = wake_state
+        self.wifi_state = wifi_state
+        self.wakeup = wakeup
+
+
+class LogAppend(Block):
+    """id 1093, UI name "Append to log". Extends Action."""
+    type_id = TYPE_LOG_APPEND
+
+    def __init__(self, stmt_id, message, cell_x=0, cell_y=0, on_complete=None,
+                 when_logging=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.message = message
+        self.when_logging = when_logging
+
+
 class StringExpr:
     """K3.W -- string literal expression wrapper, type id 106."""
     type_id = TYPE_STRING_EXPR
@@ -578,6 +825,19 @@ class DoubleExpr:
         self.value = float(value)
 
 
+class BooleanExpr:
+    """Q3.g$j -- boxed java.lang.Boolean, type id 1. Single 0/1 byte, no
+    length prefix. This is the generic boxed-object wire type (not a
+    dedicated boolean-literal *expression* wrapper like StringExpr/
+    DoubleExpr are for their types), but Automate accepts a raw boxed
+    Boolean directly wherever a boolean-valued expression field is
+    expected (e.g. SetStateAction.state, Delay.wakeup)."""
+    type_id = TYPE_BOOLEAN_EXPR
+
+    def __init__(self, value: bool):
+        self.value = bool(value)
+
+
 # ---- Serialization ----
 
 class FlowWriter:
@@ -600,6 +860,8 @@ class FlowWriter:
             return ("dbl", obj.value)
         if isinstance(obj, VariableExpr):
             return ("var", obj.name)
+        if isinstance(obj, BooleanExpr):
+            return ("bool", obj.value)
         return ("id", id(obj))
 
     @staticmethod
@@ -611,6 +873,30 @@ class FlowWriter:
         if value is None or isinstance(value, (StringExpr, VariableExpr)):
             return value
         return StringExpr(value)
+
+    @staticmethod
+    def _wrap_bool(value):
+        """Optional boolean-*valued* expression field (e.g.
+        SetStateAction.state): these are typed InterfaceC1601v0 like every
+        other expression field, evaluated at runtime via truthiness
+        (I3.h.J: nonzero number or non-empty string is true) -- NOT the raw
+        boxed-Boolean wire type (id 1, BooleanExpr in this library), which
+        does not implement InterfaceC1601v0 and was confirmed rejected by
+        Automate ("Failed to read flow") when tried here. Encode as
+        DoubleExpr(1.0/0.0), matching how a real numeric truthy/falsy
+        expression is stored. Pass through None/StringExpr/DoubleExpr as-is
+        for callers who want a different (still-valid) expression."""
+        if value is None or isinstance(value, (StringExpr, DoubleExpr, VariableExpr)):
+            return value
+        return DoubleExpr(1.0 if value else 0.0)
+
+    @staticmethod
+    def _wrap_double(value):
+        """Optional numeric field: pass through None/DoubleExpr as-is, or
+        wrap a plain Python int/float as DoubleExpr."""
+        if value is None or isinstance(value, DoubleExpr):
+            return value
+        return DoubleExpr(value)
 
     def write_object(self, obj):
         if obj is None:
@@ -636,20 +922,44 @@ class FlowWriter:
         if isinstance(obj, VariableExpr):
             self.w.write_utf(obj.name)
             return
+        if isinstance(obj, BooleanExpr):
+            self.w.write_bool(obj.value)
+            return
 
         # AbstractStatement fields (every block has these)
         self.w.write_svarint(obj.stmt_id)
         self.w.write_svarint(obj.cell_x)
         self.w.write_svarint(obj.cell_y)
 
+        if isinstance(obj, ExpressionDecision):
+            # Decision directly (NOT IntermittentDecision) -- no continuity
+            # field, unlike every other Decision-family block below.
+            self.write_object(obj.on_positive)
+            self.write_object(obj.on_negative)
+            self.write_object(obj.expression)
+            return
+
         if isinstance(obj, (CarModeEnabled, BatteryLevel, WifiNetworkConnected,
-                             BluetoothDeviceConnected, NotificationShow)):
-            # Decision, NOT Action: onPositive/onNegative instead of onComplete
+                             BluetoothDeviceConnected, NotificationShow,
+                             WifiEnabled, BluetoothEnabled,
+                             ScreenBrightness)):
+            # IntermittentDecision, NOT Action: onPositive/onNegative instead
+            # of onComplete, plus continuity.
             self.write_object(obj.on_positive)
             self.write_object(obj.on_negative)
             self.write_object(obj.continuity)
 
-            if isinstance(obj, BatteryLevel):
+            if isinstance(obj, (WifiEnabled, BluetoothEnabled)):
+                pass  # no extra fields
+            elif isinstance(obj, ScreenBrightness):
+                self.write_object(obj.min_level)
+                self.write_object(obj.max_level)
+                self.write_object(obj.var_level)
+                self.write_object(obj.scale)
+                self.write_object(obj.auto)
+                self.write_object(obj.var_auto)
+                self.write_object(obj.var_adjustment)
+            elif isinstance(obj, BatteryLevel):
                 self.write_object(obj.min_level)
                 self.write_object(obj.max_level)
                 self.write_object(obj.var_level)
@@ -747,6 +1057,32 @@ class FlowWriter:
             self.write_object(obj.var_response_code)
             self.write_object(obj.var_response_body)
             self.write_object(obj.var_response_headers)   # version 114 >= 35
+        elif isinstance(obj, Label):
+            self.write_object(obj.value)
+        elif isinstance(obj, ClipboardSet):
+            self.write_object(self._wrap_str(obj.text))
+            self.write_object(obj.html_text)
+            self.write_object(obj.uri)
+            self.write_object(obj.mime_type)
+            self.write_object(obj.label)
+            self.write_object(obj.sensitive)
+        elif isinstance(obj, ClipboardGet):
+            self.write_object(obj.continuity)
+            self.write_object(obj.var_content)
+        elif isinstance(obj, (WifiSetState, BluetoothSetState)):
+            self.write_object(self._wrap_bool(obj.state))
+        elif isinstance(obj, ScreenBrightnessSet):
+            self.write_object(self._wrap_double(obj.level))
+            self.write_object(obj.scale)
+            self.write_object(obj.auto)
+            self.write_object(obj.adjustment)
+        elif isinstance(obj, DeviceKeepAwake):
+            self.write_object(self._wrap_str(obj.wake_state))
+            self.write_object(obj.wifi_state)
+            self.write_object(obj.wakeup)
+        elif isinstance(obj, LogAppend):
+            self.write_object(self._wrap_str(obj.message))
+            self.write_object(obj.when_logging)
         elif isinstance(obj, FlowBeginning):
             self.w.write_utf(obj.title or "")
             self.w.write_u8(1 if obj.hidden else 0)   # version 114 >= 66
@@ -853,6 +1189,11 @@ class FlowReader:
             obj = VariableExpr.__new__(VariableExpr)
             self.seen.append(obj)
             obj.name = self.r.read_utf()
+            return obj
+        if type_id == TYPE_BOOLEAN_EXPR:
+            obj = BooleanExpr.__new__(BooleanExpr)
+            self.seen.append(obj)
+            obj.value = self.r.read_bool()
             return obj
         if type_id == TYPE_TOAST_SHOW:
             obj = ToastShow.__new__(ToastShow)
@@ -983,6 +1324,118 @@ class FlowReader:
             obj.var_response_body = self.read_object()
             obj.var_response_headers = self.read_object()
             return obj
+        if type_id == TYPE_EXPRESSION_DECISION:
+            obj = ExpressionDecision.__new__(ExpressionDecision)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = None
+            obj.on_positive = self.read_object()
+            obj.on_negative = self.read_object()
+            obj.continuity = None  # extends Decision directly, no continuity field
+            obj.expression = self.read_object()
+            return obj
+        if type_id == TYPE_LABEL:
+            obj = Label.__new__(Label)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.value = self.read_object()
+            return obj
+        if type_id == TYPE_CLIPBOARD_SET:
+            obj = ClipboardSet.__new__(ClipboardSet)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.text = self.read_object()
+            obj.html_text = self.read_object()
+            obj.uri = self.read_object()
+            obj.mime_type = self.read_object()
+            obj.label = self.read_object()
+            obj.sensitive = self.read_object()
+            return obj
+        if type_id == TYPE_CLIPBOARD_GET:
+            obj = ClipboardGet.__new__(ClipboardGet)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.continuity = self.read_object()
+            obj.var_content = self.read_object()
+            return obj
+        if type_id == TYPE_WIFI_ENABLED:
+            obj = WifiEnabled.__new__(WifiEnabled)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = None
+            obj.on_positive = self.read_object()
+            obj.on_negative = self.read_object()
+            obj.continuity = self.read_object()
+            return obj
+        if type_id == TYPE_WIFI_SET_STATE:
+            obj = WifiSetState.__new__(WifiSetState)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.state = self.read_object()
+            return obj
+        if type_id == TYPE_BLUETOOTH_ENABLED:
+            obj = BluetoothEnabled.__new__(BluetoothEnabled)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = None
+            obj.on_positive = self.read_object()
+            obj.on_negative = self.read_object()
+            obj.continuity = self.read_object()
+            return obj
+        if type_id == TYPE_BLUETOOTH_SET_STATE:
+            obj = BluetoothSetState.__new__(BluetoothSetState)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.state = self.read_object()
+            return obj
+        if type_id == TYPE_SCREEN_BRIGHTNESS:
+            obj = ScreenBrightness.__new__(ScreenBrightness)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = None
+            obj.on_positive = self.read_object()
+            obj.on_negative = self.read_object()
+            obj.continuity = self.read_object()
+            obj.min_level = self.read_object()
+            obj.max_level = self.read_object()
+            obj.var_level = self.read_object()
+            obj.scale = self.read_object()
+            obj.auto = self.read_object()
+            obj.var_auto = self.read_object()
+            obj.var_adjustment = self.read_object()
+            return obj
+        if type_id == TYPE_SCREEN_BRIGHTNESS_SET:
+            obj = ScreenBrightnessSet.__new__(ScreenBrightnessSet)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.level = self.read_object()
+            obj.scale = self.read_object()
+            obj.auto = self.read_object()
+            obj.adjustment = self.read_object()
+            return obj
+        if type_id == TYPE_DEVICE_KEEP_AWAKE:
+            obj = DeviceKeepAwake.__new__(DeviceKeepAwake)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.wake_state = self.read_object()
+            obj.wifi_state = self.read_object()
+            obj.wakeup = self.read_object()
+            return obj
+        if type_id == TYPE_LOG_APPEND:
+            obj = LogAppend.__new__(LogAppend)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.message = self.read_object()
+            obj.when_logging = self.read_object()
+            return obj
         raise NotImplementedError(f"Unknown/unhandled type id {type_id} at byte {self.r.pos}")
 
     def _read_stmt_header(self, obj):
@@ -1035,6 +1488,30 @@ def describe(blocks):
             lines.append(f"NotificationShow(id={b.stmt_id})")
         elif isinstance(b, HttpRequest):
             lines.append(f"HttpRequest(id={b.stmt_id})")
+        elif isinstance(b, ExpressionDecision):
+            lines.append(f"ExpressionDecision(id={b.stmt_id})")
+        elif isinstance(b, Label):
+            lines.append(f"Label(id={b.stmt_id})")
+        elif isinstance(b, ClipboardSet):
+            lines.append(f"ClipboardSet(id={b.stmt_id})")
+        elif isinstance(b, ClipboardGet):
+            lines.append(f"ClipboardGet(id={b.stmt_id})")
+        elif isinstance(b, WifiEnabled):
+            lines.append(f"WifiEnabled(id={b.stmt_id})")
+        elif isinstance(b, WifiSetState):
+            lines.append(f"WifiSetState(id={b.stmt_id})")
+        elif isinstance(b, BluetoothEnabled):
+            lines.append(f"BluetoothEnabled(id={b.stmt_id})")
+        elif isinstance(b, BluetoothSetState):
+            lines.append(f"BluetoothSetState(id={b.stmt_id})")
+        elif isinstance(b, ScreenBrightness):
+            lines.append(f"ScreenBrightness(id={b.stmt_id})")
+        elif isinstance(b, ScreenBrightnessSet):
+            lines.append(f"ScreenBrightnessSet(id={b.stmt_id})")
+        elif isinstance(b, DeviceKeepAwake):
+            lines.append(f"DeviceKeepAwake(id={b.stmt_id})")
+        elif isinstance(b, LogAppend):
+            lines.append(f"LogAppend(id={b.stmt_id})")
     return "\n".join(lines)
 
 

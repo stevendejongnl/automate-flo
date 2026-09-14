@@ -58,6 +58,18 @@ def _require_device_and_app():
     "bt-connected.flo",
     "notification-show.flo",
     "http-request.flo",
+    "expression-decision.flo",
+    "label.flo",
+    "clipboard-set.flo",
+    "clipboard-get.flo",
+    "wifi-enabled.flo",
+    "wifi-set-state.flo",
+    "bluetooth-enabled.flo",
+    "bluetooth-set-state.flo",
+    "screen-brightness.flo",
+    "screen-brightness-set.flo",
+    "device-keep-awake.flo",
+    "log-append.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name
