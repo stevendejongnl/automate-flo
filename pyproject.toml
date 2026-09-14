@@ -1,0 +1,21 @@
+[project]
+name = "automate-flo"
+version = "0.1.0"
+description = "Reverse-engineered reader/writer for LlamaLab Automate .flo flow files"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["automate_flo"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+]
