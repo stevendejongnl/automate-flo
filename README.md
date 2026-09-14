@@ -78,5 +78,30 @@ uv run pytest
 ```
 
 Includes a byte-exact round-trip test against a real Automate-exported sample,
-and a self-consistency test for the 5-block Android Auto flow (device-verified
-separately, see status above).
+and a self-consistency test for the 5-block Android Auto flow.
+
+### Testing against the real app
+
+`tests/test_emulator_import.py` pushes every fixture `.flo` to a real
+Automate install via adb and fires the same `VIEW` intent a file manager
+uses to open one, then reads back whatever dialog Automate shows (`Import
+"<name>" flow?` = accepted, `Failed to read flow` = rejected) via a
+`uiautomator` dump. This is ground truth from the actual app, not our own
+parser agreeing with itself.
+
+The Automate APK is LlamaLab's proprietary app and isn't included or
+downloaded by anything here -- get it yourself (Play Store on a device, or
+an APK mirror for a headless emulator) and install it:
+
+```
+adb -s <serial> install -r Automate_<version>.apk
+```
+
+Then point the tests at that device:
+
+```
+AUTOMATE_FLO_DEVICE_SERIAL=<serial> uv run pytest tests/test_emulator_import.py
+```
+
+Without `AUTOMATE_FLO_DEVICE_SERIAL` set, these tests are skipped
+automatically -- `uv run pytest` alone never requires a device.
