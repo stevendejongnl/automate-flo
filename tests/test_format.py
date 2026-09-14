@@ -3,9 +3,17 @@ import pathlib
 from automate_flo import (
     ActivityStart,
     AppKill,
+    BatteryLevel,
+    BluetoothDeviceConnected,
     CarModeEnabled,
     Delay,
     FlowBeginning,
+    HttpRequest,
+    NotificationShow,
+    SmsSend,
+    ToastShow,
+    VariableAssign,
+    WifiNetworkConnected,
     parse_flow,
     write_flow,
 )
@@ -63,3 +71,82 @@ def test_android_auto_flitsmeister_flow_self_consistent():
     assert r_car.on_positive is r_delay
     r_kill = r_car.on_negative
     assert isinstance(r_kill, AppKill) and r_kill.package_name == "nl.flitsmeister"
+
+
+# Each test below round-trips against a fixture that was independently
+# real-device-verified (see tests/test_emulator_import.py and README.md ->
+# Status): Automate itself accepted the exact bytes these writers produce.
+
+def test_toast_show_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    toast = ToastShow(stmt_id=2, message="hello from automate-flo", cell_x=0, cell_y=6)
+    begin.on_complete = toast
+
+    data = write_flow([begin, toast], next_id=2)
+    assert data == (FIXTURES / "toast-show.flo").read_bytes()
+
+
+def test_sms_send_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    sms = SmsSend(stmt_id=2, phone_number="+31612345678", message="test", cell_x=0, cell_y=6)
+    begin.on_complete = sms
+
+    data = write_flow([begin, sms], next_id=2)
+    assert data == (FIXTURES / "sms-send.flo").read_bytes()
+
+
+def test_variable_assign_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    va = VariableAssign(stmt_id=2, variable_name="myVar", value="hello", cell_x=0, cell_y=6)
+    begin.on_complete = va
+
+    data = write_flow([begin, va], next_id=2)
+    assert data == (FIXTURES / "variable-assign.flo").read_bytes()
+
+
+def test_battery_level_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    bl = BatteryLevel(stmt_id=2, cell_x=0, cell_y=6)
+    kill = AppKill(stmt_id=3, package_name="nl.flitsmeister", cell_x=0, cell_y=12)
+    begin.on_complete = bl
+    bl.on_positive = kill
+    bl.on_negative = None
+
+    data = write_flow([begin, bl, kill], next_id=3)
+    assert data == (FIXTURES / "battery-level.flo").read_bytes()
+
+
+def test_wifi_network_connected_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    wc = WifiNetworkConnected(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = wc
+
+    data = write_flow([begin, wc], next_id=2)
+    assert data == (FIXTURES / "wifi-connected.flo").read_bytes()
+
+
+def test_bluetooth_device_connected_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    bt = BluetoothDeviceConnected(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = bt
+
+    data = write_flow([begin, bt], next_id=2)
+    assert data == (FIXTURES / "bt-connected.flo").read_bytes()
+
+
+def test_notification_show_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ns = NotificationShow(stmt_id=2, title="Hi", message="World", cell_x=0, cell_y=6)
+    begin.on_complete = ns
+
+    data = write_flow([begin, ns], next_id=2)
+    assert data == (FIXTURES / "notification-show.flo").read_bytes()
+
+
+def test_http_request_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    hr = HttpRequest(stmt_id=2, url="https://example.com", cell_x=0, cell_y=6)
+    begin.on_complete = hr
+
+    data = write_flow([begin, hr], next_id=2)
+    assert data == (FIXTURES / "http-request.flo").read_bytes()

@@ -11,9 +11,9 @@ Android 17 emulator.
 
 ## Status
 
-Supports 5 block types — enough to build a real working flow (see
-`tests/fixtures/android-auto-flitsmeister.flo`, confirmed imported and
-executed successfully on a real device):
+Supports 13 block types. Every one below has a fixture in `tests/fixtures/`
+that was pushed to a real Automate install on an Android emulator via adb and
+confirmed accepted by the app itself (see "Testing against the real app"):
 
 - `FlowBeginning`
 - `AppKill`
@@ -21,12 +21,24 @@ executed successfully on a real device):
 - `Delay`
 - `CarModeEnabled` ("Car mode enabled?" — also the mechanism Automate uses to
   detect Android Auto connecting; there is no dedicated Android Auto block)
+- `ToastShow` ("Show toast message")
+- `NotificationShow` ("Show notification")
+- `SmsSend` ("Send SMS")
+- `VariableAssign` ("Assign variable")
+- `WifiNetworkConnected` ("Wifi network connected?")
+- `BluetoothDeviceConnected` ("Bluetooth device connected?")
+- `BatteryLevel` ("Battery level")
+- `HttpRequest` ("HTTP request")
+
+`android-auto-flitsmeister.flo` (`FlowBeginning` → `ActivityStart` → `Delay`
+→ `CarModeEnabled`) was additionally confirmed to run correctly end-to-end,
+not just import cleanly, on a real device.
 
 Automate has several hundred block types in total (see `Q3/g.java` in the
 decompiled sources for the full registry). Extending coverage means repeating
 the same process per block: read the decompiled field-serialization order,
-build it in the real app to confirm UI field order, and ideally export a real
-sample to byte-diff against.
+build it in the real app to confirm UI field order, and verify the generated
+file against a real Automate install (see below).
 
 ## Format summary
 

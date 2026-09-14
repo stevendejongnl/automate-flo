@@ -61,13 +61,27 @@ on an Android-17 emulator):
         since Android Auto puts the phone into standard UiModeManager car
         mode. This is the block ChatGPT's community-flow reference was
         actually describing.)
+  1120  ToastShow ("Show toast message")
+  1103  NotificationShow ("Show notification")
+  1122  SmsSend ("Send SMS")
+  1012  VariableAssign ("Assign variable")
+  1146  WifiNetworkConnected ("Wifi network connected?")
+  1153  BluetoothDeviceConnected ("Bluetooth device connected?")
+  1021  BatteryLevel ("Battery level")
+  1087  HttpRequest ("HTTP request")
   106   W (string literal expression wrapper, implements InterfaceC1601v0)
   104   J (double literal expression wrapper -- plain 8-byte BE double, no
         length prefix; used for Delay's "duration" field, e.g. seconds)
+  102   I3.l (mutable-variable reference -- plain UTF name, same wire shape
+        as the string wrapper but a distinct type used for variable-name
+        fields: VariableAssign.variable, and every block's varXxx output
+        fields)
   25    java.lang.String (raw String object, distinct from the "W" expr wrapper
         -- used in some other slots, not needed for our target flow)
 
-Field layouts (fully traced from source):
+Field layouts (fully traced from source; "OBJECT ref, null" means the field
+is legal to omit -- Automate accepted every generated sample below with
+these fields absent):
 
   ActivityStart(id=1001) extends IntentAction extends Action:
     AbstractStatement header (stmt_id, cell_x, cell_y)
@@ -92,19 +106,65 @@ Field layouts (fully traced from source):
     onNegative        (OBJECT ref -- branch when NOT enabled)
     continuity        (OBJECT ref, boxed Integer, null = default)
 
-Round-trip validated byte-for-byte against the real sample
-/tmp/android-auto-start-stop.flo (FlowBeginning -> AppKill("nl.flitsmeister")).
-The extended writer (ActivityStart/Delay/CarModeEnabled) is NOT validated
-against a real device-exported sample of those specific block types -- the
-UI automation session that would have produced one hit a stylus-overlay/IME
-interaction issue on the emulator before the export could be captured.
-Confidence per block: ActivityStart and CarModeEnabled field ORDER is
-UI-confirmed (visually verified against the real edit screen / block
-picker), but the exact byte encoding of ActivityStart/Delay/CarModeEnabled
-was never round-tripped against a real exported .flo the way FlowBeginning/
-AppKill was. Treat the extended flow as source-derived-and-UI-corroborated,
-not device-verified -- test the generated file on a real phone/emulator
-import before trusting it blindly.
+  ToastShow(id=1120) extends IntermittentAction extends Action:
+    header, onComplete, continuity, message (StringExpr), duration (OBJECT
+    ref, null = default)
+
+  SmsSend(id=1122) extends IntermittentAction extends Action:
+    header, onComplete, continuity, phoneNumber, subscriptionId, message,
+    multipartLimit, hidden, varMultipartCount (I3.l or null)
+
+  VariableAssign(id=1012) extends Action:
+    header, onComplete, value (expression), variable (I3.l, required --
+    Automate throws RequiredVariableMissingException at runtime if null,
+    though the file still imports fine without it)
+
+  BatteryLevel(id=1021) extends LevelDecision extends IntermittentDecision
+  extends Decision (onPositive/onNegative, not onComplete):
+    header, onPositive, onNegative, continuity, minLevel, maxLevel,
+    varLevel (I3.l or null)
+
+  WifiNetworkConnected(id=1146) extends IntermittentDecision extends
+  Decision (onPositive/onNegative):
+    header, onPositive, onNegative, continuity, ssid, bssid,
+    varConnectedSsid, varConnectedBssid, varConnectedCapabilities,
+    varConnectedLinkSpeed, varConnectedFrequency, varConnectedIpAddress
+    (all var* fields I3.l or null)
+
+  BluetoothDeviceConnected(id=1153) extends IntermittentDecision extends
+  Decision (onPositive/onNegative):
+    header, onPositive, onNegative, continuity, deviceAddress, deviceName,
+    deviceClass, pairedOnly, varConnectedDeviceAddress,
+    varConnectedDeviceName, varConnectedDeviceClass (leaving
+    deviceAddress/deviceName both null matches "any device" in the UI --
+    no device-picker interaction needed to build a valid flow)
+
+  NotificationShow(id=1103) extends IntermittentDecision extends Decision
+  (onPositive = tapped, onNegative = dismissed/timed out, not onComplete):
+    header, onPositive, onNegative, continuity, title, message,
+    shortCriticalText, pictureUri, personUri, smallIconUri, largeIconUri,
+    primaryLayoutXml, bigLayoutXml, headsUpLayoutXml, color, cancellable,
+    ongoing, visibility, category, groupKey, channelId, progress, when,
+    varKey (I3.l or null), varInterfaceUri (I3.l or null)
+    (source has many `if version >= N` gates for older-format migration;
+    all resolve to "always write" at version 114, so the field list above
+    is exhaustive for files this library produces)
+
+  HttpRequest(id=1087) extends Action:
+    header, onComplete, networkInterface, url, method, account, timeout,
+    alias, trust, dontRedirect, contentType, bodyPart, bodyPath, headers,
+    saveResponse, responsePath, varResponseCode (I3.l or null),
+    varResponseBody (I3.l or null), varResponseHeaders (I3.l or null)
+
+Every block above -- including the extended set (ActivityStart, Delay,
+CarModeEnabled, ToastShow, SmsSend, VariableAssign, BatteryLevel,
+WifiNetworkConnected, BluetoothDeviceConnected, NotificationShow,
+HttpRequest) -- has a fixture in tests/fixtures/ that was pushed to a real
+Automate 1.53.2 install on an Android-17 emulator via adb and confirmed
+accepted (Automate's own "Import ... flow?" dialog, not a rejection); see
+tests/test_emulator_import.py. FlowBeginning->AppKill is additionally
+byte-exact-verified against an Automate-exported sample built entirely by
+hand in the app UI, independent of this library.
 """
 
 import struct
@@ -120,6 +180,15 @@ TYPE_DELAY = 1046
 TYPE_CAR_MODE_ENABLED = 1201
 TYPE_STRING_EXPR = 106  # K3.W: string literal expression wrapper
 TYPE_DOUBLE_EXPR = 104  # K3.J: double literal expression wrapper
+TYPE_VARIABLE_EXPR = 102  # I3.l: mutable-variable reference (plain UTF name)
+TYPE_TOAST_SHOW = 1120
+TYPE_NOTIFICATION_SHOW = 1103
+TYPE_SMS_SEND = 1122
+TYPE_VARIABLE_ASSIGN = 1012
+TYPE_WIFI_NETWORK_CONNECTED = 1146
+TYPE_BLUETOOTH_DEVICE_CONNECTED = 1153
+TYPE_BATTERY_LEVEL = 1021
+TYPE_HTTP_REQUEST = 1087
 
 
 def _zz_enc(n: int) -> int:
@@ -306,12 +375,198 @@ class CarModeEnabled(Block):
         self.continuity = continuity
 
 
+class ToastShow(Block):
+    """id 1120, UI name "Show toast message". Extends IntermittentAction."""
+    type_id = TYPE_TOAST_SHOW
+
+    def __init__(self, stmt_id, message, cell_x=0, cell_y=0, on_complete=None,
+                 continuity=None, duration=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.continuity = continuity
+        self.message = message
+        self.duration = duration
+
+
+class SmsSend(Block):
+    """id 1122, UI name "Send SMS". Extends IntermittentAction."""
+    type_id = TYPE_SMS_SEND
+
+    def __init__(self, stmt_id, phone_number, message, cell_x=0, cell_y=0,
+                 on_complete=None, continuity=None, subscription_id=None,
+                 multipart_limit=None, hidden=None, var_multipart_count=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.continuity = continuity
+        self.phone_number = phone_number
+        self.subscription_id = subscription_id
+        self.message = message
+        self.multipart_limit = multipart_limit
+        self.hidden = hidden
+        self.var_multipart_count = var_multipart_count
+
+
+class VariableAssign(Block):
+    """id 1012, UI name "Assign variable". Extends Action."""
+    type_id = TYPE_VARIABLE_ASSIGN
+
+    def __init__(self, stmt_id, variable_name, value, cell_x=0, cell_y=0, on_complete=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.variable_name = variable_name
+        self.value = value
+
+
+class BatteryLevel(Block):
+    """id 1021, UI name "Battery level". Extends LevelDecision extends
+    IntermittentDecision extends Decision -- onPositive/onNegative, not
+    onComplete."""
+    type_id = TYPE_BATTERY_LEVEL
+
+    def __init__(self, stmt_id, cell_x=0, cell_y=0, on_positive=None,
+                 on_negative=None, continuity=None, min_level=None,
+                 max_level=None, var_level=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete=None)
+        self.on_positive = on_positive
+        self.on_negative = on_negative
+        self.continuity = continuity
+        self.min_level = min_level
+        self.max_level = max_level
+        self.var_level = var_level
+
+
+class WifiNetworkConnected(Block):
+    """id 1146, UI name "Wifi network connected?". Extends
+    IntermittentDecision extends Decision -- onPositive/onNegative."""
+    type_id = TYPE_WIFI_NETWORK_CONNECTED
+
+    def __init__(self, stmt_id, cell_x=0, cell_y=0, on_positive=None,
+                 on_negative=None, continuity=None, ssid=None, bssid=None,
+                 var_connected_ssid=None, var_connected_bssid=None,
+                 var_connected_capabilities=None, var_connected_link_speed=None,
+                 var_connected_frequency=None, var_connected_ip_address=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete=None)
+        self.on_positive = on_positive
+        self.on_negative = on_negative
+        self.continuity = continuity
+        self.ssid = ssid
+        self.bssid = bssid
+        self.var_connected_ssid = var_connected_ssid
+        self.var_connected_bssid = var_connected_bssid
+        self.var_connected_capabilities = var_connected_capabilities
+        self.var_connected_link_speed = var_connected_link_speed
+        self.var_connected_frequency = var_connected_frequency
+        self.var_connected_ip_address = var_connected_ip_address
+
+
+class BluetoothDeviceConnected(Block):
+    """id 1153, UI name "Bluetooth device connected?". Extends
+    IntermittentDecision extends Decision -- onPositive/onNegative."""
+    type_id = TYPE_BLUETOOTH_DEVICE_CONNECTED
+
+    def __init__(self, stmt_id, cell_x=0, cell_y=0, on_positive=None,
+                 on_negative=None, continuity=None, device_address=None,
+                 device_name=None, device_class=None, paired_only=None,
+                 var_connected_device_address=None, var_connected_device_name=None,
+                 var_connected_device_class=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete=None)
+        self.on_positive = on_positive
+        self.on_negative = on_negative
+        self.continuity = continuity
+        self.device_address = device_address
+        self.device_name = device_name
+        self.device_class = device_class
+        self.paired_only = paired_only
+        self.var_connected_device_address = var_connected_device_address
+        self.var_connected_device_name = var_connected_device_name
+        self.var_connected_device_class = var_connected_device_class
+
+
+class NotificationShow(Block):
+    """id 1103, UI name "Show notification". Extends IntermittentDecision
+    extends Decision -- onPositive fires on tap, onNegative on dismiss/
+    timeout (mirrors the real block's two exec outputs)."""
+    type_id = TYPE_NOTIFICATION_SHOW
+
+    def __init__(self, stmt_id, title, message, cell_x=0, cell_y=0,
+                 on_positive=None, on_negative=None, continuity=None,
+                 short_critical_text=None, picture_uri=None, person_uri=None,
+                 small_icon_uri=None, large_icon_uri=None, primary_layout_xml=None,
+                 big_layout_xml=None, heads_up_layout_xml=None, color=None,
+                 cancellable=None, ongoing=None, visibility=None, category=None,
+                 group_key=None, channel_id=None, progress=None, when=None,
+                 var_key=None, var_interface_uri=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete=None)
+        self.on_positive = on_positive
+        self.on_negative = on_negative
+        self.continuity = continuity
+        self.title = title
+        self.message = message
+        self.short_critical_text = short_critical_text
+        self.picture_uri = picture_uri
+        self.person_uri = person_uri
+        self.small_icon_uri = small_icon_uri
+        self.large_icon_uri = large_icon_uri
+        self.primary_layout_xml = primary_layout_xml
+        self.big_layout_xml = big_layout_xml
+        self.heads_up_layout_xml = heads_up_layout_xml
+        self.color = color
+        self.cancellable = cancellable
+        self.ongoing = ongoing
+        self.visibility = visibility
+        self.category = category
+        self.group_key = group_key
+        self.channel_id = channel_id
+        self.progress = progress
+        self.when = when
+        self.var_key = var_key
+        self.var_interface_uri = var_interface_uri
+
+
+class HttpRequest(Block):
+    """id 1087, UI name "HTTP request". Extends Action."""
+    type_id = TYPE_HTTP_REQUEST
+
+    def __init__(self, stmt_id, url, cell_x=0, cell_y=0, on_complete=None,
+                 network_interface=None, method=None, account=None,
+                 timeout=None, alias=None, trust=None, dont_redirect=None,
+                 content_type=None, body_part=None, body_path=None,
+                 headers=None, save_response=None, response_path=None,
+                 var_response_code=None, var_response_body=None,
+                 var_response_headers=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.network_interface = network_interface
+        self.url = url
+        self.method = method
+        self.account = account
+        self.timeout = timeout
+        self.alias = alias
+        self.trust = trust
+        self.dont_redirect = dont_redirect
+        self.content_type = content_type
+        self.body_part = body_part
+        self.body_path = body_path
+        self.headers = headers
+        self.save_response = save_response
+        self.response_path = response_path
+        self.var_response_code = var_response_code
+        self.var_response_body = var_response_body
+        self.var_response_headers = var_response_headers
+
+
 class StringExpr:
     """K3.W -- string literal expression wrapper, type id 106."""
     type_id = TYPE_STRING_EXPR
 
     def __init__(self, value: str):
         self.value = value
+
+
+class VariableExpr:
+    """I3.l -- mutable-variable reference, type id 102. Plain UTF name, same
+    wire shape as StringExpr but a distinct type used specifically for
+    variable name fields (e.g. VariableAssign.variable, *.varXxx fields)."""
+    type_id = TYPE_VARIABLE_EXPR
+
+    def __init__(self, name: str):
+        self.name = name
 
 
 class DoubleExpr:
@@ -333,16 +588,29 @@ class FlowWriter:
 
     @staticmethod
     def _dedup_key(obj):
-        # Value literals (StringExpr/DoubleExpr) intern by value, since two
-        # call sites building the "same" literal (e.g. the same package name
-        # passed to two different blocks) should collapse to one back-
-        # referenced object, matching real Automate-exported flows. Every
-        # other block is a distinct graph node, keyed by identity.
+        # Value literals (StringExpr/DoubleExpr/VariableExpr) intern by
+        # value, since two call sites building the "same" literal (e.g. the
+        # same package name passed to two different blocks) should collapse
+        # to one back-referenced object, matching real Automate-exported
+        # flows. Every other block is a distinct graph node, keyed by
+        # identity.
         if isinstance(obj, StringExpr):
             return ("str", obj.value)
         if isinstance(obj, DoubleExpr):
             return ("dbl", obj.value)
+        if isinstance(obj, VariableExpr):
+            return ("var", obj.name)
         return ("id", id(obj))
+
+    @staticmethod
+    def _wrap_str(value):
+        """Optional string-valued field: pass through None/StringExpr/
+        VariableExpr as-is, or wrap a plain str as StringExpr -- lets
+        callers write Delay("...", seconds=2) style plain values without
+        constructing StringExpr by hand for every text field."""
+        if value is None or isinstance(value, (StringExpr, VariableExpr)):
+            return value
+        return StringExpr(value)
 
     def write_object(self, obj):
         if obj is None:
@@ -365,17 +633,65 @@ class FlowWriter:
         if isinstance(obj, DoubleExpr):
             self.w.write_double(obj.value)
             return
+        if isinstance(obj, VariableExpr):
+            self.w.write_utf(obj.name)
+            return
 
         # AbstractStatement fields (every block has these)
         self.w.write_svarint(obj.stmt_id)
         self.w.write_svarint(obj.cell_x)
         self.w.write_svarint(obj.cell_y)
 
-        if isinstance(obj, CarModeEnabled):
+        if isinstance(obj, (CarModeEnabled, BatteryLevel, WifiNetworkConnected,
+                             BluetoothDeviceConnected, NotificationShow)):
             # Decision, NOT Action: onPositive/onNegative instead of onComplete
             self.write_object(obj.on_positive)
             self.write_object(obj.on_negative)
             self.write_object(obj.continuity)
+
+            if isinstance(obj, BatteryLevel):
+                self.write_object(obj.min_level)
+                self.write_object(obj.max_level)
+                self.write_object(obj.var_level)
+            elif isinstance(obj, WifiNetworkConnected):
+                self.write_object(self._wrap_str(obj.ssid))
+                self.write_object(self._wrap_str(obj.bssid))
+                self.write_object(obj.var_connected_ssid)
+                self.write_object(obj.var_connected_bssid)
+                self.write_object(obj.var_connected_capabilities)
+                self.write_object(obj.var_connected_link_speed)
+                self.write_object(obj.var_connected_frequency)
+                self.write_object(obj.var_connected_ip_address)
+            elif isinstance(obj, BluetoothDeviceConnected):
+                self.write_object(self._wrap_str(obj.device_address))
+                self.write_object(self._wrap_str(obj.device_name))
+                self.write_object(obj.device_class)
+                self.write_object(obj.paired_only)
+                self.write_object(obj.var_connected_device_address)
+                self.write_object(obj.var_connected_device_name)
+                self.write_object(obj.var_connected_device_class)
+            elif isinstance(obj, NotificationShow):
+                self.write_object(self._wrap_str(obj.title))
+                self.write_object(self._wrap_str(obj.message))
+                self.write_object(obj.short_critical_text)
+                self.write_object(obj.picture_uri)
+                self.write_object(obj.person_uri)
+                self.write_object(obj.small_icon_uri)
+                self.write_object(obj.large_icon_uri)
+                self.write_object(obj.primary_layout_xml)
+                self.write_object(obj.big_layout_xml)
+                self.write_object(obj.heads_up_layout_xml)
+                self.write_object(obj.color)
+                self.write_object(obj.cancellable)
+                self.write_object(obj.ongoing)
+                self.write_object(obj.visibility)
+                self.write_object(obj.category)
+                self.write_object(obj.group_key)
+                self.write_object(obj.channel_id)
+                self.write_object(obj.progress)
+                self.write_object(obj.when)
+                self.write_object(obj.var_key)
+                self.write_object(obj.var_interface_uri)
             return
 
         # Action fields (onComplete) -- everything else in this model is an Action
@@ -398,6 +714,39 @@ class FlowWriter:
             self.write_object(obj.continuity)
             self.write_object(obj.wakeup)
             self.write_object(DoubleExpr(obj.seconds))
+        elif isinstance(obj, ToastShow):
+            self.write_object(obj.continuity)
+            self.write_object(self._wrap_str(obj.message))
+            self.write_object(obj.duration)
+        elif isinstance(obj, SmsSend):
+            self.write_object(obj.continuity)
+            self.write_object(self._wrap_str(obj.phone_number))
+            self.write_object(obj.subscription_id)     # version 114 >= 45
+            self.write_object(self._wrap_str(obj.message))
+            self.write_object(obj.multipart_limit)
+            self.write_object(obj.hidden)
+            self.write_object(obj.var_multipart_count)  # version 114 >= 97
+        elif isinstance(obj, VariableAssign):
+            self.write_object(self._wrap_str(obj.value))
+            self.write_object(VariableExpr(obj.variable_name))
+        elif isinstance(obj, HttpRequest):
+            self.write_object(obj.network_interface)   # version 114 >= 74
+            self.write_object(self._wrap_str(obj.url))
+            self.write_object(self._wrap_str(obj.method))
+            self.write_object(obj.account)
+            self.write_object(obj.timeout)              # version 114 >= 82
+            self.write_object(self._wrap_str(obj.alias))  # version 114 >= 109
+            self.write_object(obj.trust)                 # version 114 >= 45
+            self.write_object(obj.dont_redirect)          # version 114 >= 47
+            self.write_object(self._wrap_str(obj.content_type))
+            self.write_object(obj.body_part)
+            self.write_object(obj.body_path)              # version 114 >= 82
+            self.write_object(obj.headers)                # version 114 >= 35
+            self.write_object(obj.save_response)
+            self.write_object(obj.response_path)
+            self.write_object(obj.var_response_code)
+            self.write_object(obj.var_response_body)
+            self.write_object(obj.var_response_headers)   # version 114 >= 35
         elif isinstance(obj, FlowBeginning):
             self.w.write_utf(obj.title or "")
             self.w.write_u8(1 if obj.hidden else 0)   # version 114 >= 66
@@ -500,6 +849,140 @@ class FlowReader:
             obj.on_negative = self.read_object()
             obj.continuity = self.read_object()
             return obj
+        if type_id == TYPE_VARIABLE_EXPR:
+            obj = VariableExpr.__new__(VariableExpr)
+            self.seen.append(obj)
+            obj.name = self.r.read_utf()
+            return obj
+        if type_id == TYPE_TOAST_SHOW:
+            obj = ToastShow.__new__(ToastShow)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.continuity = self.read_object()
+            obj.message = self.read_object()
+            obj.duration = self.read_object()
+            return obj
+        if type_id == TYPE_SMS_SEND:
+            obj = SmsSend.__new__(SmsSend)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.continuity = self.read_object()
+            obj.phone_number = self.read_object()
+            obj.subscription_id = self.read_object()
+            obj.message = self.read_object()
+            obj.multipart_limit = self.read_object()
+            obj.hidden = self.read_object()
+            obj.var_multipart_count = self.read_object()
+            return obj
+        if type_id == TYPE_VARIABLE_ASSIGN:
+            obj = VariableAssign.__new__(VariableAssign)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.value = self.read_object()
+            var = self.read_object()
+            obj.variable_name = var.name if var is not None else None
+            return obj
+        if type_id == TYPE_BATTERY_LEVEL:
+            obj = BatteryLevel.__new__(BatteryLevel)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = None
+            obj.on_positive = self.read_object()
+            obj.on_negative = self.read_object()
+            obj.continuity = self.read_object()
+            obj.min_level = self.read_object()
+            obj.max_level = self.read_object()
+            obj.var_level = self.read_object()
+            return obj
+        if type_id == TYPE_WIFI_NETWORK_CONNECTED:
+            obj = WifiNetworkConnected.__new__(WifiNetworkConnected)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = None
+            obj.on_positive = self.read_object()
+            obj.on_negative = self.read_object()
+            obj.continuity = self.read_object()
+            obj.ssid = self.read_object()
+            obj.bssid = self.read_object()
+            obj.var_connected_ssid = self.read_object()
+            obj.var_connected_bssid = self.read_object()
+            obj.var_connected_capabilities = self.read_object()
+            obj.var_connected_link_speed = self.read_object()
+            obj.var_connected_frequency = self.read_object()
+            obj.var_connected_ip_address = self.read_object()
+            return obj
+        if type_id == TYPE_BLUETOOTH_DEVICE_CONNECTED:
+            obj = BluetoothDeviceConnected.__new__(BluetoothDeviceConnected)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = None
+            obj.on_positive = self.read_object()
+            obj.on_negative = self.read_object()
+            obj.continuity = self.read_object()
+            obj.device_address = self.read_object()
+            obj.device_name = self.read_object()
+            obj.device_class = self.read_object()
+            obj.paired_only = self.read_object()
+            obj.var_connected_device_address = self.read_object()
+            obj.var_connected_device_name = self.read_object()
+            obj.var_connected_device_class = self.read_object()
+            return obj
+        if type_id == TYPE_NOTIFICATION_SHOW:
+            obj = NotificationShow.__new__(NotificationShow)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = None
+            obj.on_positive = self.read_object()
+            obj.on_negative = self.read_object()
+            obj.continuity = self.read_object()
+            obj.title = self.read_object()
+            obj.message = self.read_object()
+            obj.short_critical_text = self.read_object()
+            obj.picture_uri = self.read_object()
+            obj.person_uri = self.read_object()
+            obj.small_icon_uri = self.read_object()
+            obj.large_icon_uri = self.read_object()
+            obj.primary_layout_xml = self.read_object()
+            obj.big_layout_xml = self.read_object()
+            obj.heads_up_layout_xml = self.read_object()
+            obj.color = self.read_object()
+            obj.cancellable = self.read_object()
+            obj.ongoing = self.read_object()
+            obj.visibility = self.read_object()
+            obj.category = self.read_object()
+            obj.group_key = self.read_object()
+            obj.channel_id = self.read_object()
+            obj.progress = self.read_object()
+            obj.when = self.read_object()
+            obj.var_key = self.read_object()
+            obj.var_interface_uri = self.read_object()
+            return obj
+        if type_id == TYPE_HTTP_REQUEST:
+            obj = HttpRequest.__new__(HttpRequest)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.network_interface = self.read_object()
+            obj.url = self.read_object()
+            obj.method = self.read_object()
+            obj.account = self.read_object()
+            obj.timeout = self.read_object()
+            obj.alias = self.read_object()
+            obj.trust = self.read_object()
+            obj.dont_redirect = self.read_object()
+            obj.content_type = self.read_object()
+            obj.body_part = self.read_object()
+            obj.body_path = self.read_object()
+            obj.headers = self.read_object()
+            obj.save_response = self.read_object()
+            obj.response_path = self.read_object()
+            obj.var_response_code = self.read_object()
+            obj.var_response_body = self.read_object()
+            obj.var_response_headers = self.read_object()
+            return obj
         raise NotImplementedError(f"Unknown/unhandled type id {type_id} at byte {self.r.pos}")
 
     def _read_stmt_header(self, obj):
@@ -536,6 +1019,22 @@ def describe(blocks):
             lines.append(f"Delay(id={b.stmt_id}, seconds={b.seconds!r})")
         elif isinstance(b, CarModeEnabled):
             lines.append(f"CarModeEnabled(id={b.stmt_id})")
+        elif isinstance(b, ToastShow):
+            lines.append(f"ToastShow(id={b.stmt_id})")
+        elif isinstance(b, SmsSend):
+            lines.append(f"SmsSend(id={b.stmt_id})")
+        elif isinstance(b, VariableAssign):
+            lines.append(f"VariableAssign(id={b.stmt_id}, variable={b.variable_name!r})")
+        elif isinstance(b, BatteryLevel):
+            lines.append(f"BatteryLevel(id={b.stmt_id})")
+        elif isinstance(b, WifiNetworkConnected):
+            lines.append(f"WifiNetworkConnected(id={b.stmt_id})")
+        elif isinstance(b, BluetoothDeviceConnected):
+            lines.append(f"BluetoothDeviceConnected(id={b.stmt_id})")
+        elif isinstance(b, NotificationShow):
+            lines.append(f"NotificationShow(id={b.stmt_id})")
+        elif isinstance(b, HttpRequest):
+            lines.append(f"HttpRequest(id={b.stmt_id})")
     return "\n".join(lines)
 
 

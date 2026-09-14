@@ -50,6 +50,14 @@ def _require_device_and_app():
 @pytest.mark.parametrize("fixture_name", [
     "flow-beginning-app-kill.flo",
     "android-auto-flitsmeister.flo",
+    "toast-show.flo",
+    "sms-send.flo",
+    "variable-assign.flo",
+    "battery-level.flo",
+    "wifi-connected.flo",
+    "bt-connected.flo",
+    "notification-show.flo",
+    "http-request.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name
