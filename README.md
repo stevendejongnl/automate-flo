@@ -1,5 +1,7 @@
 # automate-flo
 
+[![test](https://github.com/stevendejongnl/automate-flo/actions/workflows/test.yml/badge.svg)](https://github.com/stevendejongnl/automate-flo/actions/workflows/test.yml)
+
 Reverse-engineered reader/writer for [LlamaLab Automate](https://llamalab.com/automate/)
 `.flo` flow files, in pure Python (no dependencies).
 
@@ -116,4 +118,7 @@ AUTOMATE_FLO_DEVICE_SERIAL=<serial> uv run pytest tests/test_emulator_import.py
 ```
 
 Without `AUTOMATE_FLO_DEVICE_SERIAL` set, these tests are skipped
-automatically -- `uv run pytest` alone never requires a device.
+automatically -- `uv run pytest` alone never requires a device. CI (see
+`.github/workflows/test.yml`) runs the pure round-trip tests only, for this
+reason -- the emulator tests need a real Automate install and are meant to
+be run locally when adding or changing a block.
