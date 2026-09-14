@@ -122,3 +122,25 @@ automatically -- `uv run pytest` alone never requires a device. CI (see
 `.github/workflows/test.yml`) runs the pure round-trip tests only, for this
 reason -- the emulator tests need a real Automate install and are meant to
 be run locally when adding or changing a block.
+
+## Keeping the wiki in sync
+
+The [wiki](https://github.com/stevendejongnl/automate-flo/wiki)'s Format
+Specification and Block Reference pages are written by hand from
+`automate_flo/format.py`'s module docstring, which is the real source of
+truth. Two things help catch drift:
+
+- **`.github/workflows/wiki-sync-check.yml`** runs on any PR touching
+  `format.py` and posts a warning (non-blocking) if a block type in the
+  file's type-id table isn't mentioned anywhere in the wiki's
+  `Block-Reference.md`.
+- **A local pre-push hook** (`.githooks/pre-push`) does the same reminder
+  locally, before you even push. Enable it once per clone:
+
+  ```bash
+  git config core.hooksPath .githooks
+  ```
+
+Neither check blocks a push or merge -- they're reminders, since verifying
+the wiki's *prose* is accurate (not just that a name appears somewhere)
+isn't something either can automate.

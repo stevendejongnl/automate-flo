@@ -1,0 +1,68 @@
+name: wiki-sync-check
+
+on:
+  pull_request:
+    paths:
+      - "automate_flo/format.py"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Checkout wiki
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: wiki
+          # the wiki repo may not exist yet on a brand new fork; don't fail the
+          # whole job just because there's nothing to check freshness against
+          fetch-depth: 1
+
+      - name: Extract block names from format.py's type-id table
+        id: blocks
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import re
+
+          text = open("automate_flo/format.py").read()
+          # module docstring's type-id table lines look like:
+          #   1072  FlowBeginning
+          #   1001  ActivityStart ("App start" in the UI ...
+          # Real blocks all have 4-digit ids >= 1000; the literal/expression
+          # wrapper types (W, J, I3.l) documented in the same table use
+          # small ids and aren't full blocks with their own wiki section.
+          names = sorted(set(re.findall(
+              r'^\s+(\d{4,})\s+([A-Z][A-Za-z0-9]+)\b',
+              text,
+              re.MULTILINE,
+          )))
+          names = [name for _id, name in names]
+          print("names=" + ",".join(names))
+          EOF
+
+      - name: Compare against wiki Block Reference page
+        run: |
+          missing=()
+          IFS=',' read -ra NAMES <<< "${{ steps.blocks.outputs.names }}"
+          for name in "${NAMES[@]}"; do
+            if ! grep -q "$name" wiki/Block-Reference.md 2>/dev/null; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::warning::These block types are in automate_flo/format.py but not documented in the wiki's Block-Reference.md: ${missing[*]}"
+            echo ""
+            echo "format.py changed in this PR and lists block types the wiki"
+            echo "doesn't mention yet: ${missing[*]}"
+            echo ""
+            echo "This doesn't fail the build -- but please update the wiki"
+            echo "(https://github.com/${{ github.repository }}/wiki/Block-Reference)"
+            echo "so the docs stay in sync with the code."
+            exit 0
+          fi
+
+          echo "Wiki Block Reference page mentions every block type in format.py. OK."

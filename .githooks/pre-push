@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Warns (does not block) if automate_flo/format.py changed in the commits
+# being pushed but the local wiki clone doesn't have a matching recent
+# commit -- format.py's module docstring is the source of truth the wiki's
+# Format Specification / Block Reference pages are written from, so a
+# change there usually means those pages need a look too.
+#
+# Enable with: git config core.hooksPath .githooks
+
+set -euo pipefail
+
+remote="$1"
+range_has_format_py_change=false
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+    [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue # branch deletion
+    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+        range="$local_sha"  # new branch: check the whole thing against nothing, cap to last 20
+        commits=$(git rev-list "$local_sha" --max-count=20)
+    else
+        commits=$(git rev-list "$remote_sha..$local_sha")
+    fi
+    for c in $commits; do
+        if git show --stat --format="" "$c" | grep -q "automate_flo/format.py"; then
+            range_has_format_py_change=true
+        fi
+    done
+done
+
+$range_has_format_py_change || exit 0
+
+repo_root=$(git rev-parse --show-toplevel)
+wiki_dir="$repo_root/../automate-flo.wiki"
+
+warn() {
+    echo "" >&2
+    echo "⚠ automate_flo/format.py changed in this push." >&2
+    echo "  That file's docstring is the source of truth for the wiki's" >&2
+    echo "  Format Specification and Block Reference pages -- consider updating them." >&2
+    echo "  Wiki repo: git clone git@github.com:stevendejongnl/automate-flo.wiki.git" >&2
+    echo "" >&2
+}
+
+if [ ! -d "$wiki_dir/.git" ]; then
+    warn
+    echo "  (no local wiki clone found at $wiki_dir to check freshness against)" >&2
+    exit 0
+fi
+
+wiki_last_commit_epoch=$(git -C "$wiki_dir" log -1 --format=%ct 2>/dev/null || echo 0)
+now_epoch=$(date +%s)
+age_days=$(( (now_epoch - wiki_last_commit_epoch) / 86400 ))
+
+if [ "$age_days" -gt 7 ]; then
+    warn
+    echo "  Local wiki clone's last commit was $age_days days ago -- probably stale." >&2
+fi
+
+exit 0
