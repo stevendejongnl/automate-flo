@@ -40,6 +40,7 @@ from automate_flo import (
     ArrayAdd,
     ArrayRemove,
     ArraySet,
+    AssistRequest,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,
@@ -670,3 +671,16 @@ def test_array_set_byte_exact():
 
     data = write_flow([begin, as_], next_id=2)
     assert data == (FIXTURES / "array-set.flo").read_bytes()
+
+
+def test_assist_request_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ar = AssistRequest(stmt_id=2, cell_x=0, cell_y=6, title="Assist",
+                        var_package_name=VariableExpr("pkg"), var_activity_class_name=VariableExpr("cls"),
+                        var_intent_action=VariableExpr("act"), var_intent_categories=VariableExpr("cat"),
+                        var_intent_uri=VariableExpr("uri"), var_intent_mime_type=VariableExpr("mime"),
+                        var_intent_extras=VariableExpr("extras"), var_web_uri=VariableExpr("web"))
+    begin.on_complete = ar
+
+    data = write_flow([begin, ar], next_id=2)
+    assert data == (FIXTURES / "assist-request.flo").read_bytes()

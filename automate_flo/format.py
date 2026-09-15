@@ -129,6 +129,7 @@ reverse-engineering notes):
   1009  ArrayAdd             automate_flo/blocks/array_add.py
   1010  ArrayRemove          automate_flo/blocks/array_remove.py
   1011  ArraySet             automate_flo/blocks/array_set.py
+  1013  AssistRequest        automate_flo/blocks/assist_request.py
   106   StringExpr (W)       automate_flo/base.py -- string literal expression wrapper
   104   DoubleExpr (J)       automate_flo/base.py -- double literal expression wrapper,
         plain 8-byte BE double, no length prefix (e.g. Delay's "duration")

@@ -51,6 +51,7 @@ from .app_widget_configure import AppWidgetConfigure
 from .array_add import ArrayAdd
 from .array_remove import ArrayRemove
 from .array_set import ArraySet
+from .assist_request import AssistRequest
 from .battery_level import BatteryLevel
 from .bluetooth_device_connected import BluetoothDeviceConnected
 from .bluetooth_enabled import BluetoothEnabled
@@ -115,6 +116,7 @@ ALL_BLOCKS = [
     ArrayAdd,
     ArrayRemove,
     ArraySet,
+    AssistRequest,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,

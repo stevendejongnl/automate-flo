@@ -107,6 +107,7 @@ def _require_device_and_app():
     "array-add.flo",
     "array-remove.flo",
     "array-set.flo",
+    "assist-request.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name
