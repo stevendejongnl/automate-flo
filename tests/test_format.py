@@ -12,6 +12,7 @@ from automate_flo import (
     ActivityStartVoice,
     AdbProtocolSet,
     AdbShellCommand,
+    AirplaneModeEnabled,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
@@ -378,3 +379,12 @@ def test_adb_protocol_set_byte_exact():
 
     data = write_flow([begin, aps], next_id=2)
     assert data == (FIXTURES / "adb-protocol-set.flo").read_bytes()
+
+
+def test_airplane_mode_enabled_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ame = AirplaneModeEnabled(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = ame
+
+    data = write_flow([begin, ame], next_id=2)
+    assert data == (FIXTURES / "airplane-mode-enabled.flo").read_bytes()
