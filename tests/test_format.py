@@ -21,6 +21,7 @@ from automate_flo import (
     AmbientTemperature,
     AndroidVersion,
     AppClearCache,
+    AppForeground,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
@@ -473,3 +474,15 @@ def test_app_clear_cache_byte_exact():
 
     data = write_flow([begin, acc], next_id=2)
     assert data == (FIXTURES / "app-clear-cache.flo").read_bytes()
+
+
+def test_app_foreground_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    af = AppForeground(stmt_id=2, cell_x=0, cell_y=6, package_name=PKG,
+                        class_name=PKG + ".MainActivity",
+                        var_foreground_package_name=VariableExpr("fgPkg"),
+                        var_foreground_class_name=VariableExpr("fgCls"))
+    begin.on_complete = af
+
+    data = write_flow([begin, af], next_id=2)
+    assert data == (FIXTURES / "app-foreground.flo").read_bytes()

@@ -89,6 +89,7 @@ def _require_device_and_app():
     "ambient-temperature.flo",
     "android-version.flo",
     "app-clear-cache.flo",
+    "app-foreground.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name
