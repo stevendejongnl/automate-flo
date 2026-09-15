@@ -71,6 +71,7 @@ def _require_device_and_app():
     "device-keep-awake.flo",
     "log-append.flo",
     "accessibility-button.flo",
+    "account-generic-add.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name

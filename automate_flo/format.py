@@ -84,6 +84,9 @@ on an Android-17 emulator):
   1334  AccessibilityButton ("Accessibility button" -- confirmed via live
         search: opening the real edit screen shows no additional input
         fields, consistent with displayId being valid left null/absent)
+  1236  AccountGenericAdd ("Account generic add" -- confirmed via live
+        edit screen: exactly 3 text fields in order, accountName/
+        username/password, all legal to leave null)
   106   W (string literal expression wrapper, implements InterfaceC1601v0)
   104   J (double literal expression wrapper -- plain 8-byte BE double, no
         length prefix; used for Delay's "duration" field, e.g. seconds)
@@ -105,6 +108,13 @@ these fields absent):
     AbstractStatement header (stmt_id, cell_x, cell_y)
     onComplete
     displayId (OBJECT ref, null)
+
+  AccountGenericAdd(id=1236) extends Action:
+    AbstractStatement header (stmt_id, cell_x, cell_y)
+    onComplete
+    accountName (OBJECT ref, null)
+    username (OBJECT ref, null)
+    password (OBJECT ref, null)
 
   ActivityStart(id=1001) extends IntentAction extends Action:
     AbstractStatement header (stmt_id, cell_x, cell_y)
@@ -277,6 +287,7 @@ TYPE_SCREEN_BRIGHTNESS_SET = 1114
 TYPE_DEVICE_KEEP_AWAKE = 1115
 TYPE_LOG_APPEND = 1093
 TYPE_ACCESSIBILITY_BUTTON = 1334
+TYPE_ACCOUNT_GENERIC_ADD = 1236
 
 
 def _zz_enc(n: int) -> int:
@@ -816,6 +827,18 @@ class AccessibilityButton(Block):
         self.display_id = display_id
 
 
+class AccountGenericAdd(Block):
+    """id 1236, UI name "Account generic add". Extends Action."""
+    type_id = TYPE_ACCOUNT_GENERIC_ADD
+
+    def __init__(self, stmt_id, account_name=None, username=None, password=None,
+                 cell_x=0, cell_y=0, on_complete=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.account_name = account_name
+        self.username = username
+        self.password = password
+
+
 class StringExpr:
     """K3.W -- string literal expression wrapper, type id 106."""
     type_id = TYPE_STRING_EXPR
@@ -1103,6 +1126,10 @@ class FlowWriter:
             self.write_object(obj.when_logging)
         elif isinstance(obj, AccessibilityButton):
             self.write_object(obj.display_id)
+        elif isinstance(obj, AccountGenericAdd):
+            self.write_object(self._wrap_str(obj.account_name))
+            self.write_object(self._wrap_str(obj.username))
+            self.write_object(self._wrap_str(obj.password))
         elif isinstance(obj, FlowBeginning):
             self.w.write_utf(obj.title or "")
             self.w.write_u8(1 if obj.hidden else 0)   # version 114 >= 66
@@ -1463,6 +1490,15 @@ class FlowReader:
             obj.on_complete = self.read_object()
             obj.display_id = self.read_object()
             return obj
+        if type_id == TYPE_ACCOUNT_GENERIC_ADD:
+            obj = AccountGenericAdd.__new__(AccountGenericAdd)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.account_name = self.read_object()
+            obj.username = self.read_object()
+            obj.password = self.read_object()
+            return obj
         raise NotImplementedError(f"Unknown/unhandled type id {type_id} at byte {self.r.pos}")
 
     def _read_stmt_header(self, obj):
@@ -1541,6 +1577,8 @@ def describe(blocks):
             lines.append(f"LogAppend(id={b.stmt_id})")
         elif isinstance(b, AccessibilityButton):
             lines.append(f"AccessibilityButton(id={b.stmt_id})")
+        elif isinstance(b, AccountGenericAdd):
+            lines.append(f"AccountGenericAdd(id={b.stmt_id})")
     return "\n".join(lines)
 
 

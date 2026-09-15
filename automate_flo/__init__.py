@@ -1,5 +1,6 @@
 from .format import (
     AccessibilityButton,
+    AccountGenericAdd,
     ActivityStart,
     AppKill,
     BatteryLevel,
@@ -37,6 +38,7 @@ from .format import (
 
 __all__ = [
     "AccessibilityButton",
+    "AccountGenericAdd",
     "ActivityStart",
     "AppKill",
     "BatteryLevel",
