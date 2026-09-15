@@ -132,6 +132,31 @@ reverse-engineering notes):
   1013  AssistRequest        automate_flo/blocks/assist_request.py
   1014  AtmosphericPressure  automate_flo/blocks/atmospheric_pressure.py
   1253  AtomicAdd            automate_flo/blocks/atomic_add.py
+  1254  AtomicClearAll       automate_flo/blocks/atomic_clear_all.py
+  1255  AtomicCompareAndStore automate_flo/blocks/atomic_compare_and_store.py
+  1256  AtomicLoad           automate_flo/blocks/atomic_load.py
+  1257  AtomicStore          automate_flo/blocks/atomic_store.py
+  1205  AttentionLight       automate_flo/blocks/attention_light.py
+  1329  AudioDeviceConnected automate_flo/blocks/audio_device_connected.py
+  1349  AudioDeviceRecording automate_flo/blocks/audio_device_recording.py
+  1152  AudioPlayerControl   automate_flo/blocks/audio_player_control.py
+  1015  AudioRecordStart     automate_flo/blocks/audio_record_start.py
+  1016  AudioRecordStop      automate_flo/blocks/audio_record_stop.py
+  1317  AudioStreamMuted     automate_flo/blocks/audio_stream_muted.py
+  1318  AudioStreamSetMute   automate_flo/blocks/audio_stream_set_mute.py
+  1017  AudioVolume          automate_flo/blocks/audio_volume.py
+  1018  AudioVolumeSet       automate_flo/blocks/audio_volume_set.py
+  1411  BarcodeScan          automate_flo/blocks/barcode_scan.py
+  1369  BatteryCharging      automate_flo/blocks/battery_charging.py
+  1370  BatteryProperties    automate_flo/blocks/battery_properties.py
+  1383  BluetoothDeviceActiveSet automate_flo/blocks/bluetooth_device_active_set.py
+  1371  BluetoothDeviceBondCreate automate_flo/blocks/bluetooth_device_bond_create.py
+  1393  BluetoothDeviceBondRemove automate_flo/blocks/bluetooth_device_bond_remove.py
+  1211  BluetoothDeviceConnect automate_flo/blocks/bluetooth_device_connect.py
+  1270  BluetoothDeviceDisconnect automate_flo/blocks/bluetooth_device_disconnect.py
+  1154  BluetoothDevicePick  automate_flo/blocks/bluetooth_device_pick.py
+  1277  BluetoothDeviceScan  automate_flo/blocks/bluetooth_device_scan.py
+  1372  BluetoothGattRead    automate_flo/blocks/bluetooth_gatt_read.py
   106   StringExpr (W)       automate_flo/base.py -- string literal expression wrapper
   104   DoubleExpr (J)       automate_flo/base.py -- double literal expression wrapper,
         plain 8-byte BE double, no length prefix (e.g. Delay's "duration")

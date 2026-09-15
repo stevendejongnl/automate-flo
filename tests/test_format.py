@@ -43,9 +43,34 @@ from automate_flo import (
     AssistRequest,
     AtmosphericPressure,
     AtomicAdd,
+    AtomicClearAll,
+    AtomicCompareAndStore,
+    AtomicLoad,
+    AtomicStore,
+    AttentionLight,
+    AudioDeviceConnected,
+    AudioDeviceRecording,
+    AudioPlayerControl,
+    AudioRecordStart,
+    AudioRecordStop,
+    AudioStreamMuted,
+    AudioStreamSetMute,
+    AudioVolume,
+    AudioVolumeSet,
+    BarcodeScan,
+    BatteryCharging,
     BatteryLevel,
+    BatteryProperties,
+    BluetoothDeviceActiveSet,
+    BluetoothDeviceBondCreate,
+    BluetoothDeviceBondRemove,
+    BluetoothDeviceConnect,
     BluetoothDeviceConnected,
+    BluetoothDeviceDisconnect,
+    BluetoothDevicePick,
+    BluetoothDeviceScan,
     BluetoothEnabled,
+    BluetoothGattRead,
     BluetoothSetState,
     CarModeEnabled,
     ClipboardGet,
@@ -704,3 +729,228 @@ def test_atomic_add_byte_exact():
 
     data = write_flow([begin, aa], next_id=2)
     assert data == (FIXTURES / "atomic-add.flo").read_bytes()
+
+def test_atomic_clear_all_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AtomicClearAll(stmt_id=2)
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "atomic-clear-all.flo").read_bytes()
+
+def test_atomic_compare_and_store_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AtomicCompareAndStore(stmt_id=2, var_atomic=VariableExpr("counter"), expect=None)
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "atomic-compare-and-store.flo").read_bytes()
+
+def test_atomic_load_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AtomicLoad(stmt_id=2, var_atomic=VariableExpr("counter"))
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "atomic-load.flo").read_bytes()
+
+def test_atomic_store_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AtomicStore(stmt_id=2, var_atomic=VariableExpr("counter"))
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "atomic-store.flo").read_bytes()
+
+def test_attention_light_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AttentionLight(stmt_id=2)
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "attention-light.flo").read_bytes()
+
+def test_audio_device_connected_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AudioDeviceConnected(stmt_id=2, var_connected_device_type=VariableExpr("devType"))
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "audio-device-connected.flo").read_bytes()
+
+def test_audio_device_recording_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AudioDeviceRecording(stmt_id=2, var_recording_device_type=VariableExpr("devType"))
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "audio-device-recording.flo").read_bytes()
+
+def test_audio_player_control_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AudioPlayerControl(stmt_id=2)
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "audio-player-control.flo").read_bytes()
+
+def test_audio_record_start_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AudioRecordStart(stmt_id=2, var_audio_file=VariableExpr("audioFile"))
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "audio-record-start.flo").read_bytes()
+
+def test_audio_record_stop_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AudioRecordStop(stmt_id=2)
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "audio-record-stop.flo").read_bytes()
+
+def test_audio_stream_muted_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AudioStreamMuted(stmt_id=2)
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "audio-stream-muted.flo").read_bytes()
+
+def test_audio_stream_set_mute_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AudioStreamSetMute(stmt_id=2)
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "audio-stream-set-mute.flo").read_bytes()
+
+def test_audio_volume_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AudioVolume(stmt_id=2)
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "audio-volume.flo").read_bytes()
+
+def test_audio_volume_set_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = AudioVolumeSet(stmt_id=2)
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "audio-volume-set.flo").read_bytes()
+
+def test_barcode_scan_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = BarcodeScan(stmt_id=2, var_raw_values=VariableExpr("rawValues"))
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "barcode-scan.flo").read_bytes()
+
+def test_battery_charging_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = BatteryCharging(stmt_id=2, var_until_fully_charged=VariableExpr("untilFull"))
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "battery-charging.flo").read_bytes()
+
+def test_battery_properties_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = BatteryProperties(stmt_id=2, var_capacity=VariableExpr("capacity"))
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "battery-properties.flo").read_bytes()
+
+def test_bluetooth_device_active_set_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = BluetoothDeviceActiveSet(stmt_id=2, device_address="AA:BB:CC:DD:EE:FF")
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "bluetooth-device-active-set.flo").read_bytes()
+
+def test_bluetooth_device_bond_create_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = BluetoothDeviceBondCreate(stmt_id=2, device_address="AA:BB:CC:DD:EE:FF")
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "bluetooth-device-bond-create.flo").read_bytes()
+
+def test_bluetooth_device_bond_remove_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = BluetoothDeviceBondRemove(stmt_id=2, device_address="AA:BB:CC:DD:EE:FF")
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "bluetooth-device-bond-remove.flo").read_bytes()
+
+def test_bluetooth_device_connect_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = BluetoothDeviceConnect(stmt_id=2, device_address="AA:BB:CC:DD:EE:FF")
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "bluetooth-device-connect.flo").read_bytes()
+
+def test_bluetooth_device_disconnect_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = BluetoothDeviceDisconnect(stmt_id=2, device_address="AA:BB:CC:DD:EE:FF")
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "bluetooth-device-disconnect.flo").read_bytes()
+
+def test_bluetooth_device_pick_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = BluetoothDevicePick(stmt_id=2, var_device_address=VariableExpr("devAddr"))
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "bluetooth-device-pick.flo").read_bytes()
+
+def test_bluetooth_device_scan_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = BluetoothDeviceScan(stmt_id=2, var_device_addresses=VariableExpr("devAddrs"))
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "bluetooth-device-scan.flo").read_bytes()
+
+def test_bluetooth_gatt_read_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    b = BluetoothGattRead(stmt_id=2, device_address="AA:BB:CC:DD:EE:FF", var_result=VariableExpr("gattResult"))
+    b.cell_x, b.cell_y = 0, 6
+    begin.on_complete = b
+
+    data = write_flow([begin, b], next_id=2)
+    assert data == (FIXTURES / "bluetooth-gatt-read.flo").read_bytes()

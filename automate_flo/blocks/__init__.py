@@ -12,6 +12,7 @@ pkgutil) -- deliberately, so "what blocks exist" is readable at a glance
 here rather than implied by directory contents.
 """
 
+
 from .accessibility_button import AccessibilityButton
 from .account_generic_add import AccountGenericAdd
 from .account_pick import AccountPick
@@ -54,9 +55,34 @@ from .array_set import ArraySet
 from .assist_request import AssistRequest
 from .atmospheric_pressure import AtmosphericPressure
 from .atomic_add import AtomicAdd
+from .atomic_clear_all import AtomicClearAll
+from .atomic_compare_and_store import AtomicCompareAndStore
+from .atomic_load import AtomicLoad
+from .atomic_store import AtomicStore
+from .attention_light import AttentionLight
+from .audio_device_connected import AudioDeviceConnected
+from .audio_device_recording import AudioDeviceRecording
+from .audio_player_control import AudioPlayerControl
+from .audio_record_start import AudioRecordStart
+from .audio_record_stop import AudioRecordStop
+from .audio_stream_muted import AudioStreamMuted
+from .audio_stream_set_mute import AudioStreamSetMute
+from .audio_volume import AudioVolume
+from .audio_volume_set import AudioVolumeSet
+from .barcode_scan import BarcodeScan
+from .battery_charging import BatteryCharging
 from .battery_level import BatteryLevel
+from .battery_properties import BatteryProperties
+from .bluetooth_device_active_set import BluetoothDeviceActiveSet
+from .bluetooth_device_bond_create import BluetoothDeviceBondCreate
+from .bluetooth_device_bond_remove import BluetoothDeviceBondRemove
+from .bluetooth_device_connect import BluetoothDeviceConnect
 from .bluetooth_device_connected import BluetoothDeviceConnected
+from .bluetooth_device_disconnect import BluetoothDeviceDisconnect
+from .bluetooth_device_pick import BluetoothDevicePick
+from .bluetooth_device_scan import BluetoothDeviceScan
 from .bluetooth_enabled import BluetoothEnabled
+from .bluetooth_gatt_read import BluetoothGattRead
 from .bluetooth_set_state import BluetoothSetState
 from .car_mode_enabled import CarModeEnabled
 from .clipboard_get import ClipboardGet
@@ -121,9 +147,34 @@ ALL_BLOCKS = [
     AssistRequest,
     AtmosphericPressure,
     AtomicAdd,
+    AtomicClearAll,
+    AtomicCompareAndStore,
+    AtomicLoad,
+    AtomicStore,
+    AttentionLight,
+    AudioDeviceConnected,
+    AudioDeviceRecording,
+    AudioPlayerControl,
+    AudioRecordStart,
+    AudioRecordStop,
+    AudioStreamMuted,
+    AudioStreamSetMute,
+    AudioVolume,
+    AudioVolumeSet,
+    BarcodeScan,
+    BatteryCharging,
     BatteryLevel,
+    BatteryProperties,
+    BluetoothDeviceActiveSet,
+    BluetoothDeviceBondCreate,
+    BluetoothDeviceBondRemove,
+    BluetoothDeviceConnect,
     BluetoothDeviceConnected,
+    BluetoothDeviceDisconnect,
+    BluetoothDevicePick,
+    BluetoothDeviceScan,
     BluetoothEnabled,
+    BluetoothGattRead,
     BluetoothSetState,
     CarModeEnabled,
     ClipboardGet,
