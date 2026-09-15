@@ -8,6 +8,8 @@ from automate_flo import (
     AccountSyncRequest,
     AccountSyncSetState,
     ActivityStart,
+    ActivityStartResult,
+    ActivityStartVoice,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
@@ -338,3 +340,21 @@ def test_account_sync_set_state_byte_exact():
 
     data = write_flow([begin, asss], next_id=2)
     assert data == (FIXTURES / "account-sync-set-state.flo").read_bytes()
+
+
+def test_activity_start_result_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    asr = ActivityStartResult(stmt_id=2, package_name="com.example.app", cell_x=0, cell_y=6)
+    begin.on_complete = asr
+
+    data = write_flow([begin, asr], next_id=2)
+    assert data == (FIXTURES / "activity-start-result.flo").read_bytes()
+
+
+def test_activity_start_voice_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    asv = ActivityStartVoice(stmt_id=2, package_name="com.example.app", cell_x=0, cell_y=6)
+    begin.on_complete = asv
+
+    data = write_flow([begin, asv], next_id=2)
+    assert data == (FIXTURES / "activity-start-voice.flo").read_bytes()

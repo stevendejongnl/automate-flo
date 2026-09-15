@@ -102,6 +102,14 @@ on an Android-17 emulator):
   1020  AccountSyncSetState ("Account sync set state" -- extends
         SetStateAction extends Action; state then accountName/
         accountType/authority, all nullable)
+  1002  ActivityStartResult ("App start for result" -- extends
+        ActivityIntentDecision extends IntentDecision extends Decision;
+        Decision's u(dVar) hook fires before IntentDecision's own fields,
+        interleaving timeout/startActivity/notificationChannelId ahead of
+        packageName..flags, with activityOptions/varResultUri/
+        varResultExtras trailing)
+  1346  ActivityStartVoice ("App start voice" -- extends IntentAction
+        directly with no overrides; exactly IntentAction's base 8 fields)
   106   W (string literal expression wrapper, implements InterfaceC1601v0)
   104   J (double literal expression wrapper -- plain 8-byte BE double, no
         length prefix; used for Delay's "duration" field, e.g. seconds)
@@ -138,6 +146,26 @@ these fields absent):
       (all OBJECT refs, all null except packageName which is a StringExpr)
     activityOptions   (OBJECT ref, null)
     chooser           (OBJECT ref, null)
+
+  ActivityStartVoice(id=1346) extends IntentAction directly, no overrides:
+    AbstractStatement header (stmt_id, cell_x, cell_y)
+    onComplete
+    packageName, className, action, uri, mimeType, categories, extras, flags
+      (all OBJECT refs, all null except packageName which is a StringExpr --
+      same base 8 fields as ActivityStart, no activityOptions/chooser)
+
+  ActivityStartResult(id=1002) extends ActivityIntentDecision extends
+  IntentDecision extends Decision (onPositive/onNegative, not onComplete):
+    AbstractStatement header (stmt_id, cell_x, cell_y)
+    onPositive, onNegative
+    timeout, startActivity (OBJECT ref, null; version 114 >= 9, always
+      written), notificationChannelId (OBJECT ref, null; version 114 >= 77,
+      always written) -- these come from Decision's u(dVar) hook, called
+      BEFORE IntentDecision's own field writes
+    packageName, className, action, uri, mimeType, categories, extras, flags
+      (all OBJECT refs, all null except packageName which is a StringExpr)
+    activityOptions (OBJECT ref, null; version 114 >= 89, always written)
+    varResultUri (I3.l or null), varResultExtras (I3.l or null)
 
   Delay(id=1046) extends IntermittentAction extends Action:
     AbstractStatement header (stmt_id, cell_x, cell_y)
@@ -328,6 +356,8 @@ TYPE_ACCOUNT_PICK = 1000
 TYPE_ACCOUNT_SYNC_ENABLED = 1019
 TYPE_ACCOUNT_SYNC_REQUEST = 1230
 TYPE_ACCOUNT_SYNC_SET_STATE = 1020
+TYPE_ACTIVITY_START_RESULT = 1002
+TYPE_ACTIVITY_START_VOICE = 1346
 
 
 def _zz_enc(n: int) -> int:
@@ -491,6 +521,65 @@ class ActivityStart(Block):
         self.flags = flags
         self.activity_options = activity_options
         self.chooser = chooser
+
+
+class ActivityStartResult(Block):
+    """id 1002, UI name "App start for result". Extends ActivityIntentDecision
+    extends IntentDecision extends Decision. Decision.S() calls its u(dVar)
+    hook (overridden by ActivityIntentDecision to write timeout/
+    startActivity/notificationChannelId) BEFORE IntentDecision.S() appends
+    its own packageName..flags fields -- so the wire order interleaves the
+    two parent classes: onPositive, onNegative, timeout, startActivity,
+    notificationChannelId, THEN packageName..flags, THEN this class's own
+    activityOptions/varResultUri/varResultExtras. All version gates (9, 73,
+    77, 89) are always satisfied at version 114."""
+    type_id = TYPE_ACTIVITY_START_RESULT
+
+    def __init__(self, stmt_id, package_name, cell_x=0, cell_y=0,
+                 on_positive=None, on_negative=None, timeout=None,
+                 start_activity=None, notification_channel_id=None,
+                 class_name=None, action=None, uri=None, mime_type=None,
+                 categories=None, extras=None, flags=None,
+                 activity_options=None, var_result_uri=None,
+                 var_result_extras=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete=None)
+        self.on_positive = on_positive
+        self.on_negative = on_negative
+        self.timeout = timeout
+        self.start_activity = start_activity
+        self.notification_channel_id = notification_channel_id
+        self.package_name = package_name
+        self.class_name = class_name
+        self.action = action
+        self.uri = uri
+        self.mime_type = mime_type
+        self.categories = categories
+        self.extras = extras
+        self.flags = flags
+        self.activity_options = activity_options
+        self.var_result_uri = var_result_uri
+        self.var_result_extras = var_result_extras
+
+
+class ActivityStartVoice(Block):
+    """id 1346, UI name "App start voice". Extends IntentAction directly with
+    NO overrides of its own -- exactly IntentAction's base 8 fields, same
+    as ActivityStart's own packageName..flags but without ActivityStart's
+    extra activityOptions/chooser fields."""
+    type_id = TYPE_ACTIVITY_START_VOICE
+
+    def __init__(self, stmt_id, package_name, cell_x=0, cell_y=0, on_complete=None,
+                 class_name=None, action=None, uri=None, mime_type=None,
+                 categories=None, extras=None, flags=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.package_name = package_name
+        self.class_name = class_name
+        self.action = action
+        self.uri = uri
+        self.mime_type = mime_type
+        self.categories = categories
+        self.extras = extras
+        self.flags = flags
 
 
 class Delay(Block):
@@ -1109,6 +1198,30 @@ class FlowWriter:
             self.write_object(obj.var_picked_account_type)
             return
 
+        if isinstance(obj, ActivityStartResult):
+            # Decision.S() calls u(dVar) -- overridden here to write timeout/
+            # startActivity/notificationChannelId -- BEFORE IntentDecision.S()
+            # appends packageName..flags, so those interleave before the
+            # intent fields; activityOptions/varResultUri/varResultExtras are
+            # this class's own trailing fields.
+            self.write_object(obj.on_positive)
+            self.write_object(obj.on_negative)
+            self.write_object(obj.timeout)
+            self.write_object(obj.start_activity)           # version 114 >= 9
+            self.write_object(obj.notification_channel_id)  # version 114 >= 77
+            self.write_object(StringExpr(obj.package_name))
+            self.write_object(obj.class_name)
+            self.write_object(obj.action)
+            self.write_object(obj.uri)
+            self.write_object(obj.mime_type)
+            self.write_object(obj.categories)
+            self.write_object(obj.extras)
+            self.write_object(obj.flags)              # version 114 >= 73
+            self.write_object(obj.activity_options)   # version 114 >= 89
+            self.write_object(obj.var_result_uri)
+            self.write_object(obj.var_result_extras)
+            return
+
         if isinstance(obj, (CarModeEnabled, BatteryLevel, WifiNetworkConnected,
                              BluetoothDeviceConnected, NotificationShow,
                              WifiEnabled, BluetoothEnabled,
@@ -1194,6 +1307,15 @@ class FlowWriter:
             self.write_object(obj.flags)          # version 114 >= 45
             self.write_object(obj.activity_options)  # version 114 >= 89
             self.write_object(obj.chooser)            # version 114 >= 38
+        elif isinstance(obj, ActivityStartVoice):
+            self.write_object(StringExpr(obj.package_name))
+            self.write_object(obj.class_name)
+            self.write_object(obj.action)
+            self.write_object(obj.uri)
+            self.write_object(obj.mime_type)
+            self.write_object(obj.categories)
+            self.write_object(obj.extras)
+            self.write_object(obj.flags)          # version 114 >= 73
         elif isinstance(obj, Delay):
             self.write_object(obj.continuity)
             self.write_object(obj.wakeup)
@@ -1354,6 +1476,21 @@ class FlowReader:
             obj.flags = self.read_object()
             obj.activity_options = self.read_object()
             obj.chooser = self.read_object()
+            return obj
+        if type_id == TYPE_ACTIVITY_START_VOICE:
+            obj = ActivityStartVoice.__new__(ActivityStartVoice)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            pkg = self.read_object()
+            obj.package_name = pkg.value if pkg is not None else None
+            obj.class_name = self.read_object()
+            obj.action = self.read_object()
+            obj.uri = self.read_object()
+            obj.mime_type = self.read_object()
+            obj.categories = self.read_object()
+            obj.extras = self.read_object()
+            obj.flags = self.read_object()
             return obj
         if type_id == TYPE_DELAY:
             obj = Delay.__new__(Delay)
@@ -1537,6 +1674,29 @@ class FlowReader:
             obj.var_picked_account_name = self.read_object()
             obj.var_picked_account_type = self.read_object()
             return obj
+        if type_id == TYPE_ACTIVITY_START_RESULT:
+            obj = ActivityStartResult.__new__(ActivityStartResult)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = None
+            obj.on_positive = self.read_object()
+            obj.on_negative = self.read_object()
+            obj.timeout = self.read_object()
+            obj.start_activity = self.read_object()
+            obj.notification_channel_id = self.read_object()
+            pkg = self.read_object()
+            obj.package_name = pkg.value if pkg is not None else None
+            obj.class_name = self.read_object()
+            obj.action = self.read_object()
+            obj.uri = self.read_object()
+            obj.mime_type = self.read_object()
+            obj.categories = self.read_object()
+            obj.extras = self.read_object()
+            obj.flags = self.read_object()
+            obj.activity_options = self.read_object()
+            obj.var_result_uri = self.read_object()
+            obj.var_result_extras = self.read_object()
+            return obj
         if type_id == TYPE_LABEL:
             obj = Label.__new__(Label)
             self.seen.append(obj)
@@ -1718,6 +1878,10 @@ def describe(blocks):
             lines.append(f"AppKill(id={b.stmt_id}, package={b.package_name!r})")
         elif isinstance(b, ActivityStart):
             lines.append(f"ActivityStart(id={b.stmt_id}, package={b.package_name!r})")
+        elif isinstance(b, ActivityStartResult):
+            lines.append(f"ActivityStartResult(id={b.stmt_id}, package={b.package_name!r})")
+        elif isinstance(b, ActivityStartVoice):
+            lines.append(f"ActivityStartVoice(id={b.stmt_id}, package={b.package_name!r})")
         elif isinstance(b, Delay):
             lines.append(f"Delay(id={b.stmt_id}, seconds={b.seconds!r})")
         elif isinstance(b, CarModeEnabled):
