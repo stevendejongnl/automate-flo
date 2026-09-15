@@ -41,6 +41,8 @@ from automate_flo import (
     ArrayRemove,
     ArraySet,
     AssistRequest,
+    AtmosphericPressure,
+    AtomicAdd,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,
@@ -684,3 +686,21 @@ def test_assist_request_byte_exact():
 
     data = write_flow([begin, ar], next_id=2)
     assert data == (FIXTURES / "assist-request.flo").read_bytes()
+
+
+def test_atmospheric_pressure_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ap = AtmosphericPressure(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = ap
+
+    data = write_flow([begin, ap], next_id=2)
+    assert data == (FIXTURES / "atmospheric-pressure.flo").read_bytes()
+
+
+def test_atomic_add_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    aa = AtomicAdd(stmt_id=2, cell_x=0, cell_y=6, var_atomic=VariableExpr("counter"), delta=1)
+    begin.on_complete = aa
+
+    data = write_flow([begin, aa], next_id=2)
+    assert data == (FIXTURES / "atomic-add.flo").read_bytes()

@@ -108,6 +108,8 @@ def _require_device_and_app():
     "array-remove.flo",
     "array-set.flo",
     "assist-request.flo",
+    "atmospheric-pressure.flo",
+    "atomic-add.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name

@@ -52,6 +52,8 @@ from .array_add import ArrayAdd
 from .array_remove import ArrayRemove
 from .array_set import ArraySet
 from .assist_request import AssistRequest
+from .atmospheric_pressure import AtmosphericPressure
+from .atomic_add import AtomicAdd
 from .battery_level import BatteryLevel
 from .bluetooth_device_connected import BluetoothDeviceConnected
 from .bluetooth_enabled import BluetoothEnabled
@@ -117,6 +119,8 @@ ALL_BLOCKS = [
     ArrayRemove,
     ArraySet,
     AssistRequest,
+    AtmosphericPressure,
+    AtomicAdd,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,
