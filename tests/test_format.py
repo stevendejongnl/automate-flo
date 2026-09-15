@@ -14,6 +14,7 @@ from automate_flo import (
     AdbShellCommand,
     AirplaneModeEnabled,
     AirplaneModeSetState,
+    Alarm,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
@@ -398,3 +399,13 @@ def test_airplane_mode_set_state_byte_exact():
 
     data = write_flow([begin, amss], next_id=2)
     assert data == (FIXTURES / "airplane-mode-set-state.flo").read_bytes()
+
+
+def test_alarm_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    a = Alarm(stmt_id=2, cell_x=0, cell_y=6,
+              var_alarm_timestamp=VariableExpr("alarmTime"))
+    begin.on_complete = a
+
+    data = write_flow([begin, a], next_id=2)
+    assert data == (FIXTURES / "alarm.flo").read_bytes()

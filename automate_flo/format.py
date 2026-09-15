@@ -104,6 +104,7 @@ reverse-engineering notes):
   1380  AdbProtocolSet       automate_flo/blocks/adb_protocol_set.py
   1003  AirplaneModeEnabled  automate_flo/blocks/airplane_mode_enabled.py
   1165  AirplaneModeSetState automate_flo/blocks/airplane_mode_set_state.py
+  1210  Alarm                automate_flo/blocks/alarm.py
   106   StringExpr (W)       automate_flo/base.py -- string literal expression wrapper
   104   DoubleExpr (J)       automate_flo/base.py -- double literal expression wrapper,
         plain 8-byte BE double, no length prefix (e.g. Delay's "duration")
