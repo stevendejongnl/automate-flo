@@ -47,6 +47,7 @@ from .app_op_mode import AppOpMode
 from .app_op_mode_set import AppOpModeSet
 from .app_pick import AppPick
 from .app_usage import AppUsage
+from .app_widget_configure import AppWidgetConfigure
 from .battery_level import BatteryLevel
 from .bluetooth_device_connected import BluetoothDeviceConnected
 from .bluetooth_enabled import BluetoothEnabled
@@ -107,6 +108,7 @@ ALL_BLOCKS = [
     AppOpModeSet,
     AppPick,
     AppUsage,
+    AppWidgetConfigure,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,

@@ -36,6 +36,7 @@ from automate_flo import (
     AppOpModeSet,
     AppPick,
     AppUsage,
+    AppWidgetConfigure,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,
@@ -628,3 +629,13 @@ def test_app_usage_byte_exact():
 
     data = write_flow([begin, au], next_id=2)
     assert data == (FIXTURES / "app-usage.flo").read_bytes()
+
+
+def test_app_widget_configure_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    awc = AppWidgetConfigure(stmt_id=2, cell_x=0, cell_y=6, title="Configure",
+                              var_interface_uri=VariableExpr("uri"), var_host_category=VariableExpr("cat"))
+    begin.on_complete = awc
+
+    data = write_flow([begin, awc], next_id=2)
+    assert data == (FIXTURES / "app-widget-configure.flo").read_bytes()

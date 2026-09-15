@@ -103,6 +103,7 @@ def _require_device_and_app():
     "app-op-mode-set.flo",
     "app-pick.flo",
     "app-usage.flo",
+    "app-widget-configure.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name
