@@ -4,6 +4,7 @@ from automate_flo import (
     AccessibilityButton,
     AccountGenericAdd,
     AccountPick,
+    AccountSyncEnabled,
     ActivityStart,
     AppKill,
     BatteryLevel,
@@ -308,3 +309,12 @@ def test_account_pick_byte_exact():
 
     data = write_flow([begin, ap], next_id=2)
     assert data == (FIXTURES / "account-pick.flo").read_bytes()
+
+
+def test_account_sync_enabled_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ase = AccountSyncEnabled(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = ase
+
+    data = write_flow([begin, ase], next_id=2)
+    assert data == (FIXTURES / "account-sync-enabled.flo").read_bytes()

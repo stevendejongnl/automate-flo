@@ -73,6 +73,7 @@ def _require_device_and_app():
     "accessibility-button.flo",
     "account-generic-add.flo",
     "account-pick.flo",
+    "account-sync-enabled.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name

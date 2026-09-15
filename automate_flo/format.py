@@ -92,6 +92,11 @@ on an Android-17 emulator):
         not shown in the live edit screen but always present per source;
         confirmed null-safe on-device, the picker null-field escape
         hatch)
+  1019  AccountSyncEnabled ("Account sync enabled?" -- extends
+        IntermittentDecision directly; live edit screen shows a "Pick
+        account" picker instead of separate text fields, but all three
+        extra fields are always present per source; confirmed null-safe
+        on-device)
   106   W (string literal expression wrapper, implements InterfaceC1601v0)
   104   J (double literal expression wrapper -- plain 8-byte BE double, no
         length prefix; used for Delay's "duration" field, e.g. seconds)
@@ -302,6 +307,7 @@ TYPE_LOG_APPEND = 1093
 TYPE_ACCESSIBILITY_BUTTON = 1334
 TYPE_ACCOUNT_GENERIC_ADD = 1236
 TYPE_ACCOUNT_PICK = 1000
+TYPE_ACCOUNT_SYNC_ENABLED = 1019
 
 
 def _zz_enc(n: int) -> int:
@@ -717,6 +723,26 @@ class AccountPick(Block):
         self.var_picked_account_type = var_picked_account_type
 
 
+class AccountSyncEnabled(Block):
+    """id 1019, UI name "Account sync enabled?". Extends IntermittentDecision
+    directly -- onPositive/onNegative/continuity, plus accountName/
+    accountType/authority. The live edit screen shows a "Pick account"
+    picker widget instead of separate text fields, but the wire format
+    always has all three per source; confirmed null-safe on-device."""
+    type_id = TYPE_ACCOUNT_SYNC_ENABLED
+
+    def __init__(self, stmt_id, cell_x=0, cell_y=0, on_positive=None,
+                 on_negative=None, continuity=None, account_name=None,
+                 account_type=None, authority=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete=None)
+        self.on_positive = on_positive
+        self.on_negative = on_negative
+        self.continuity = continuity
+        self.account_name = account_name
+        self.account_type = account_type
+        self.authority = authority
+
+
 class Label(Block):
     """id 1288, UI name "Label". Extends Action -- a jump target for Goto;
     this library doesn't implement Goto (its field layout involves a
@@ -1038,7 +1064,7 @@ class FlowWriter:
         if isinstance(obj, (CarModeEnabled, BatteryLevel, WifiNetworkConnected,
                              BluetoothDeviceConnected, NotificationShow,
                              WifiEnabled, BluetoothEnabled,
-                             ScreenBrightness)):
+                             ScreenBrightness, AccountSyncEnabled)):
             # IntermittentDecision, NOT Action: onPositive/onNegative instead
             # of onComplete, plus continuity.
             self.write_object(obj.on_positive)
@@ -1098,6 +1124,10 @@ class FlowWriter:
                 self.write_object(obj.when)
                 self.write_object(obj.var_key)
                 self.write_object(obj.var_interface_uri)
+            elif isinstance(obj, AccountSyncEnabled):
+                self.write_object(self._wrap_str(obj.account_name))
+                self.write_object(self._wrap_str(obj.account_type))
+                self.write_object(self._wrap_str(obj.authority))
             return
 
         # Action fields (onComplete) -- everything else in this model is an Action
@@ -1486,6 +1516,18 @@ class FlowReader:
             obj.on_negative = self.read_object()
             obj.continuity = self.read_object()
             return obj
+        if type_id == TYPE_ACCOUNT_SYNC_ENABLED:
+            obj = AccountSyncEnabled.__new__(AccountSyncEnabled)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = None
+            obj.on_positive = self.read_object()
+            obj.on_negative = self.read_object()
+            obj.continuity = self.read_object()
+            obj.account_name = self.read_object()
+            obj.account_type = self.read_object()
+            obj.authority = self.read_object()
+            return obj
         if type_id == TYPE_WIFI_SET_STATE:
             obj = WifiSetState.__new__(WifiSetState)
             self.seen.append(obj)
@@ -1632,6 +1674,8 @@ def describe(blocks):
             lines.append(f"ClipboardGet(id={b.stmt_id})")
         elif isinstance(b, WifiEnabled):
             lines.append(f"WifiEnabled(id={b.stmt_id})")
+        elif isinstance(b, AccountSyncEnabled):
+            lines.append(f"AccountSyncEnabled(id={b.stmt_id})")
         elif isinstance(b, WifiSetState):
             lines.append(f"WifiSetState(id={b.stmt_id})")
         elif isinstance(b, BluetoothEnabled):
