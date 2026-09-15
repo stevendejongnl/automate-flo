@@ -34,6 +34,7 @@ from automate_flo import (
     AppNotificationsVisibilitySet,
     AppOpMode,
     AppOpModeSet,
+    AppPick,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,
@@ -606,3 +607,12 @@ def test_app_op_mode_set_byte_exact():
 
     data = write_flow([begin, aoms], next_id=2)
     assert data == (FIXTURES / "app-op-mode-set.flo").read_bytes()
+
+
+def test_app_pick_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ap = AppPick(stmt_id=2, cell_x=0, cell_y=6, var_package_name=VariableExpr("pkg"))
+    begin.on_complete = ap
+
+    data = write_flow([begin, ap], next_id=2)
+    assert data == (FIXTURES / "app-pick.flo").read_bytes()

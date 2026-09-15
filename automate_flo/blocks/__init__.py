@@ -45,6 +45,7 @@ from .app_notifications_visibility_get import AppNotificationsVisibilityGet
 from .app_notifications_visibility_set import AppNotificationsVisibilitySet
 from .app_op_mode import AppOpMode
 from .app_op_mode_set import AppOpModeSet
+from .app_pick import AppPick
 from .battery_level import BatteryLevel
 from .bluetooth_device_connected import BluetoothDeviceConnected
 from .bluetooth_enabled import BluetoothEnabled
@@ -103,6 +104,7 @@ ALL_BLOCKS = [
     AppNotificationsVisibilitySet,
     AppOpMode,
     AppOpModeSet,
+    AppPick,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,

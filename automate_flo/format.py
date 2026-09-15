@@ -123,6 +123,7 @@ reverse-engineering notes):
   1309  AppNotificationsVisibilitySet automate_flo/blocks/app_notifications_visibility_set.py
   1250  AppOpMode            automate_flo/blocks/app_op_mode.py
   1251  AppOpModeSet         automate_flo/blocks/app_op_mode_set.py
+  1237  AppPick              automate_flo/blocks/app_pick.py
   106   StringExpr (W)       automate_flo/base.py -- string literal expression wrapper
   104   DoubleExpr (J)       automate_flo/base.py -- double literal expression wrapper,
         plain 8-byte BE double, no length prefix (e.g. Delay's "duration")
