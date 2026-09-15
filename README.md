@@ -89,14 +89,23 @@ uv run pytest
 Includes a byte-exact round-trip test against a real Automate-exported sample,
 and a self-consistency test for the 5-block Android Auto flow.
 
+Each block's tests live next to its source, e.g. `automate_flo/blocks/delay.py`
++ `automate_flo/blocks/test_delay.py` + its fixture `automate_flo/blocks/delay.flo`
+-- easier to read than one file per hundred blocks. The 2 tests that don't
+belong to any single block (the multi-block flow tests above) live in
+`tests/test_flows.py` instead.
+
 ### Testing against the real app
 
-`tests/test_emulator_import.py` pushes every fixture `.flo` to a real
-Automate install via adb and fires the same `VIEW` intent a file manager
-uses to open one, then reads back whatever dialog Automate shows (`Import
-"<name>" flow?` = accepted, `Failed to read flow` = rejected) via a
-`uiautomator` dump. This is ground truth from the actual app, not our own
-parser agreeing with itself.
+Every block's test file also has an `..._imports_cleanly` test that pushes
+its fixture `.flo` to a real Automate install via adb and fires the same
+`VIEW` intent a file manager uses to open one, then reads back whatever
+dialog Automate shows (`Import "<name>" flow?` = accepted, `Failed to read
+flow` = rejected) via a `uiautomator` dump. This is ground truth from the
+actual app, not our own parser agreeing with itself. The shared adb-driving
+logic lives in `tests/emulator.py`, wrapped as pytest fixtures (`device_serial`,
+`import_flow_fn`) in the repo-root `conftest.py` so every test file can use
+it without reaching into `tests/` directly.
 
 The Automate APK is LlamaLab's proprietary app and isn't included or
 downloaded by anything here -- get it yourself (Play Store on a device, or
@@ -109,7 +118,13 @@ adb -s <serial> install -r Automate_<version>.apk
 Then point the tests at that device:
 
 ```
-AUTOMATE_FLO_DEVICE_SERIAL=<serial> uv run pytest tests/test_emulator_import.py
+AUTOMATE_FLO_DEVICE_SERIAL=<serial> uv run pytest
+```
+
+or, to run only the device-import tests:
+
+```
+AUTOMATE_FLO_DEVICE_SERIAL=<serial> uv run pytest -k imports_cleanly
 ```
 
 Without `AUTOMATE_FLO_DEVICE_SERIAL` set, these tests are skipped
