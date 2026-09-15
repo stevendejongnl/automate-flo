@@ -20,6 +20,7 @@ from automate_flo import (
     AmbientLight,
     AmbientTemperature,
     AndroidVersion,
+    AppClearCache,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
@@ -463,3 +464,12 @@ def test_android_version_byte_exact():
 
     data = write_flow([begin, av], next_id=2)
     assert data == (FIXTURES / "android-version.flo").read_bytes()
+
+
+def test_app_clear_cache_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    acc = AppClearCache(stmt_id=2, package_name=PKG, cell_x=0, cell_y=6)
+    begin.on_complete = acc
+
+    data = write_flow([begin, acc], next_id=2)
+    assert data == (FIXTURES / "app-clear-cache.flo").read_bytes()

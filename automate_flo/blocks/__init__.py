@@ -31,6 +31,7 @@ from .alternative_launch import AlternativeLaunch
 from .ambient_light import AmbientLight
 from .ambient_temperature import AmbientTemperature
 from .android_version import AndroidVersion
+from .app_clear_cache import AppClearCache
 from .app_kill import AppKill
 from .battery_level import BatteryLevel
 from .bluetooth_device_connected import BluetoothDeviceConnected
@@ -76,6 +77,7 @@ ALL_BLOCKS = [
     AmbientLight,
     AmbientTemperature,
     AndroidVersion,
+    AppClearCache,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
