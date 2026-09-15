@@ -10,6 +10,8 @@ from automate_flo import (
     ActivityStart,
     ActivityStartResult,
     ActivityStartVoice,
+    AdbProtocolSet,
+    AdbShellCommand,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
@@ -358,3 +360,21 @@ def test_activity_start_voice_byte_exact():
 
     data = write_flow([begin, asv], next_id=2)
     assert data == (FIXTURES / "activity-start-voice.flo").read_bytes()
+
+
+def test_adb_shell_command_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    asc = AdbShellCommand(stmt_id=2, command="echo hi", cell_x=0, cell_y=6)
+    begin.on_complete = asc
+
+    data = write_flow([begin, asc], next_id=2)
+    assert data == (FIXTURES / "adb-shell-command.flo").read_bytes()
+
+
+def test_adb_protocol_set_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    aps = AdbProtocolSet(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = aps
+
+    data = write_flow([begin, aps], next_id=2)
+    assert data == (FIXTURES / "adb-protocol-set.flo").read_bytes()

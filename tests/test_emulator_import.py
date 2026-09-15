@@ -78,6 +78,8 @@ def _require_device_and_app():
     "account-sync-set-state.flo",
     "activity-start-result.flo",
     "activity-start-voice.flo",
+    "adb-shell-command.flo",
+    "adb-protocol-set.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name

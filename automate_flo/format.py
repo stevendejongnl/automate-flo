@@ -110,6 +110,12 @@ on an Android-17 emulator):
         varResultExtras trailing)
   1346  ActivityStartVoice ("App start voice" -- extends IntentAction
         directly with no overrides; exactly IntentAction's base 8 fields)
+  1342  AdbShellCommand ("ADB shell command" -- extends AdbAction extends
+        Action; AdbAction's own host/port/security(>=94, always written)/
+        alias fields written before command/varStdout/varStderr/
+        varExitCode)
+  1380  AdbProtocolSet ("ADB protocol set" -- extends AdbAction extends
+        Action; same AdbAction fields, then protocol/tcpipPort)
   106   W (string literal expression wrapper, implements InterfaceC1601v0)
   104   J (double literal expression wrapper -- plain 8-byte BE double, no
         length prefix; used for Delay's "duration" field, e.g. seconds)
@@ -138,6 +144,23 @@ these fields absent):
     accountName (OBJECT ref, null)
     username (OBJECT ref, null)
     password (OBJECT ref, null)
+
+  AdbShellCommand(id=1342) extends AdbAction extends Action:
+    AbstractStatement header (stmt_id, cell_x, cell_y)
+    onComplete
+    host, port (OBJECT refs, null)
+    security (OBJECT ref, null; version 114 >= 94, always written)
+    alias (OBJECT ref, null)
+    command (OBJECT ref, null except wrapped as StringExpr when a plain
+      str is passed)
+    varStdout, varStderr, varExitCode (I3.l or null)
+
+  AdbProtocolSet(id=1380) extends AdbAction extends Action:
+    AbstractStatement header (stmt_id, cell_x, cell_y)
+    onComplete
+    host, port, security (>=94, always written), alias -- same AdbAction
+      fields as AdbShellCommand
+    protocol (OBJECT ref, null), tcpipPort (OBJECT ref, null)
 
   ActivityStart(id=1001) extends IntentAction extends Action:
     AbstractStatement header (stmt_id, cell_x, cell_y)
@@ -358,6 +381,8 @@ TYPE_ACCOUNT_SYNC_REQUEST = 1230
 TYPE_ACCOUNT_SYNC_SET_STATE = 1020
 TYPE_ACTIVITY_START_RESULT = 1002
 TYPE_ACTIVITY_START_VOICE = 1346
+TYPE_ADB_SHELL_COMMAND = 1342
+TYPE_ADB_PROTOCOL_SET = 1380
 
 
 def _zz_enc(n: int) -> int:
@@ -1045,6 +1070,45 @@ class AccountGenericAdd(Block):
         self.password = password
 
 
+class AdbShellCommand(Block):
+    """id 1342, UI name "ADB shell command". Extends AdbAction extends
+    Action -- AdbAction's own S()/y0() write host/port/security(version
+    114 >= 94, always written)/alias BEFORE this class's own fields:
+    command, varStdout, varStderr, varExitCode."""
+    type_id = TYPE_ADB_SHELL_COMMAND
+
+    def __init__(self, stmt_id, command=None, cell_x=0, cell_y=0, on_complete=None,
+                 host=None, port=None, security=None, alias=None,
+                 var_stdout=None, var_stderr=None, var_exit_code=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.host = host
+        self.port = port
+        self.security = security
+        self.alias = alias
+        self.command = command
+        self.var_stdout = var_stdout
+        self.var_stderr = var_stderr
+        self.var_exit_code = var_exit_code
+
+
+class AdbProtocolSet(Block):
+    """id 1380, UI name "ADB protocol set". Extends AdbAction extends Action
+    -- host/port/security/alias (same as AdbShellCommand), then this
+    class's own protocol/tcpipPort."""
+    type_id = TYPE_ADB_PROTOCOL_SET
+
+    def __init__(self, stmt_id, cell_x=0, cell_y=0, on_complete=None,
+                 host=None, port=None, security=None, alias=None,
+                 protocol=None, tcpip_port=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.host = host
+        self.port = port
+        self.security = security
+        self.alias = alias
+        self.protocol = protocol
+        self.tcpip_port = tcpip_port
+
+
 class StringExpr:
     """K3.W -- string literal expression wrapper, type id 106."""
     type_id = TYPE_STRING_EXPR
@@ -1385,6 +1449,20 @@ class FlowWriter:
             self.write_object(self._wrap_str(obj.account_name))
             self.write_object(self._wrap_str(obj.username))
             self.write_object(self._wrap_str(obj.password))
+        elif isinstance(obj, (AdbShellCommand, AdbProtocolSet)):
+            # AdbAction's own fields, common to both subclasses.
+            self.write_object(obj.host)
+            self.write_object(obj.port)
+            self.write_object(obj.security)  # version 114 >= 94
+            self.write_object(obj.alias)
+            if isinstance(obj, AdbShellCommand):
+                self.write_object(self._wrap_str(obj.command))
+                self.write_object(obj.var_stdout)
+                self.write_object(obj.var_stderr)
+                self.write_object(obj.var_exit_code)
+            else:
+                self.write_object(obj.protocol)
+                self.write_object(obj.tcpip_port)
         elif isinstance(obj, AccountSyncRequest):
             self.write_object(self._wrap_str(obj.account_name))
             self.write_object(self._wrap_str(obj.account_type))
@@ -1827,6 +1905,32 @@ class FlowReader:
             obj.username = self.read_object()
             obj.password = self.read_object()
             return obj
+        if type_id == TYPE_ADB_SHELL_COMMAND:
+            obj = AdbShellCommand.__new__(AdbShellCommand)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.host = self.read_object()
+            obj.port = self.read_object()
+            obj.security = self.read_object()  # version 114 >= 94
+            obj.alias = self.read_object()
+            obj.command = self.read_object()
+            obj.var_stdout = self.read_object()
+            obj.var_stderr = self.read_object()
+            obj.var_exit_code = self.read_object()
+            return obj
+        if type_id == TYPE_ADB_PROTOCOL_SET:
+            obj = AdbProtocolSet.__new__(AdbProtocolSet)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.host = self.read_object()
+            obj.port = self.read_object()
+            obj.security = self.read_object()  # version 114 >= 94
+            obj.alias = self.read_object()
+            obj.protocol = self.read_object()
+            obj.tcpip_port = self.read_object()
+            return obj
         if type_id == TYPE_ACCOUNT_SYNC_REQUEST:
             obj = AccountSyncRequest.__new__(AccountSyncRequest)
             self.seen.append(obj)
@@ -1938,6 +2042,10 @@ def describe(blocks):
             lines.append(f"AccessibilityButton(id={b.stmt_id})")
         elif isinstance(b, AccountGenericAdd):
             lines.append(f"AccountGenericAdd(id={b.stmt_id})")
+        elif isinstance(b, AdbShellCommand):
+            lines.append(f"AdbShellCommand(id={b.stmt_id})")
+        elif isinstance(b, AdbProtocolSet):
+            lines.append(f"AdbProtocolSet(id={b.stmt_id})")
     return "\n".join(lines)
 
 
