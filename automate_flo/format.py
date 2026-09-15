@@ -97,6 +97,11 @@ on an Android-17 emulator):
         account" picker instead of separate text fields, but all three
         extra fields are always present per source; confirmed null-safe
         on-device)
+  1230  AccountSyncRequest ("Account sync request" -- extends Action
+        directly; accountName/accountType/authority, all nullable)
+  1020  AccountSyncSetState ("Account sync set state" -- extends
+        SetStateAction extends Action; state then accountName/
+        accountType/authority, all nullable)
   106   W (string literal expression wrapper, implements InterfaceC1601v0)
   104   J (double literal expression wrapper -- plain 8-byte BE double, no
         length prefix; used for Delay's "duration" field, e.g. seconds)
@@ -215,6 +220,19 @@ these fields absent):
     the live edit screen by default), varPickedAccountName (VariableExpr
     or null), varPickedAccountType (VariableExpr or null)
 
+  AccountSyncEnabled(id=1019) extends IntermittentDecision directly:
+    header, onPositive, onNegative, continuity, accountName, accountType,
+    authority (all OBJECT refs, null legal; the live edit screen shows a
+    "Pick account" picker widget instead of separate text fields)
+
+  AccountSyncRequest(id=1230) extends Action:
+    header, onComplete, accountName, accountType, authority (all OBJECT
+    refs, null legal)
+
+  AccountSyncSetState(id=1020) extends SetStateAction extends Action:
+    header, onComplete, state (OBJECT ref, boolean expression), then
+    accountName, accountType, authority (all OBJECT refs, null legal)
+
   Label(id=1288) extends Action:
     header, onComplete, value (OBJECT ref, the label's name/id expression,
     null legal). Goto (id=1287, the block that jumps to a Label) is NOT
@@ -308,6 +326,8 @@ TYPE_ACCESSIBILITY_BUTTON = 1334
 TYPE_ACCOUNT_GENERIC_ADD = 1236
 TYPE_ACCOUNT_PICK = 1000
 TYPE_ACCOUNT_SYNC_ENABLED = 1019
+TYPE_ACCOUNT_SYNC_REQUEST = 1230
+TYPE_ACCOUNT_SYNC_SET_STATE = 1020
 
 
 def _zz_enc(n: int) -> int:
@@ -738,6 +758,34 @@ class AccountSyncEnabled(Block):
         self.on_positive = on_positive
         self.on_negative = on_negative
         self.continuity = continuity
+        self.account_name = account_name
+        self.account_type = account_type
+        self.authority = authority
+
+
+class AccountSyncRequest(Block):
+    """id 1230, UI name "Account sync request". Extends Action directly --
+    accountName/accountType/authority, all nullable."""
+    type_id = TYPE_ACCOUNT_SYNC_REQUEST
+
+    def __init__(self, stmt_id, account_name=None, account_type=None,
+                 authority=None, cell_x=0, cell_y=0, on_complete=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.account_name = account_name
+        self.account_type = account_type
+        self.authority = authority
+
+
+class AccountSyncSetState(Block):
+    """id 1020, UI name "Account sync set state". Extends SetStateAction
+    extends Action -- state (boolean expression), then accountName/
+    accountType/authority, all nullable."""
+    type_id = TYPE_ACCOUNT_SYNC_SET_STATE
+
+    def __init__(self, stmt_id, state, account_name=None, account_type=None,
+                 authority=None, cell_x=0, cell_y=0, on_complete=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.state = state
         self.account_name = account_name
         self.account_type = account_type
         self.authority = authority
@@ -1215,6 +1263,15 @@ class FlowWriter:
             self.write_object(self._wrap_str(obj.account_name))
             self.write_object(self._wrap_str(obj.username))
             self.write_object(self._wrap_str(obj.password))
+        elif isinstance(obj, AccountSyncRequest):
+            self.write_object(self._wrap_str(obj.account_name))
+            self.write_object(self._wrap_str(obj.account_type))
+            self.write_object(self._wrap_str(obj.authority))
+        elif isinstance(obj, AccountSyncSetState):
+            self.write_object(self._wrap_bool(obj.state))
+            self.write_object(self._wrap_str(obj.account_name))
+            self.write_object(self._wrap_str(obj.account_type))
+            self.write_object(self._wrap_str(obj.authority))
         elif isinstance(obj, FlowBeginning):
             self.w.write_utf(obj.title or "")
             self.w.write_u8(1 if obj.hidden else 0)   # version 114 >= 66
@@ -1610,6 +1667,25 @@ class FlowReader:
             obj.username = self.read_object()
             obj.password = self.read_object()
             return obj
+        if type_id == TYPE_ACCOUNT_SYNC_REQUEST:
+            obj = AccountSyncRequest.__new__(AccountSyncRequest)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.account_name = self.read_object()
+            obj.account_type = self.read_object()
+            obj.authority = self.read_object()
+            return obj
+        if type_id == TYPE_ACCOUNT_SYNC_SET_STATE:
+            obj = AccountSyncSetState.__new__(AccountSyncSetState)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.state = self.read_object()
+            obj.account_name = self.read_object()
+            obj.account_type = self.read_object()
+            obj.authority = self.read_object()
+            return obj
         raise NotImplementedError(f"Unknown/unhandled type id {type_id} at byte {self.r.pos}")
 
     def _read_stmt_header(self, obj):
@@ -1676,6 +1752,10 @@ def describe(blocks):
             lines.append(f"WifiEnabled(id={b.stmt_id})")
         elif isinstance(b, AccountSyncEnabled):
             lines.append(f"AccountSyncEnabled(id={b.stmt_id})")
+        elif isinstance(b, AccountSyncRequest):
+            lines.append(f"AccountSyncRequest(id={b.stmt_id})")
+        elif isinstance(b, AccountSyncSetState):
+            lines.append(f"AccountSyncSetState(id={b.stmt_id})")
         elif isinstance(b, WifiSetState):
             lines.append(f"WifiSetState(id={b.stmt_id})")
         elif isinstance(b, BluetoothEnabled):

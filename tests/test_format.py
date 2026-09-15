@@ -5,6 +5,8 @@ from automate_flo import (
     AccountGenericAdd,
     AccountPick,
     AccountSyncEnabled,
+    AccountSyncRequest,
+    AccountSyncSetState,
     ActivityStart,
     AppKill,
     BatteryLevel,
@@ -318,3 +320,21 @@ def test_account_sync_enabled_byte_exact():
 
     data = write_flow([begin, ase], next_id=2)
     assert data == (FIXTURES / "account-sync-enabled.flo").read_bytes()
+
+
+def test_account_sync_request_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    asr = AccountSyncRequest(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = asr
+
+    data = write_flow([begin, asr], next_id=2)
+    assert data == (FIXTURES / "account-sync-request.flo").read_bytes()
+
+
+def test_account_sync_set_state_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    asss = AccountSyncSetState(stmt_id=2, state=True, cell_x=0, cell_y=6)
+    begin.on_complete = asss
+
+    data = write_flow([begin, asss], next_id=2)
+    assert data == (FIXTURES / "account-sync-set-state.flo").read_bytes()

@@ -74,6 +74,8 @@ def _require_device_and_app():
     "account-generic-add.flo",
     "account-pick.flo",
     "account-sync-enabled.flo",
+    "account-sync-request.flo",
+    "account-sync-set-state.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name
