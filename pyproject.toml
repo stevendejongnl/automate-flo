@@ -6,7 +6,8 @@ requires-python = ">=3.9"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest>=8.4.2"]
+gui = ["fastapi", "uvicorn[standard]"]
 
 [build-system]
 requires = ["hatchling"]
