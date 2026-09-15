@@ -19,6 +19,7 @@ from automate_flo import (
     AlternativeLaunch,
     AmbientLight,
     AmbientTemperature,
+    AndroidVersion,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
@@ -29,6 +30,7 @@ from automate_flo import (
     ClipboardSet,
     Delay,
     DeviceKeepAwake,
+    DoubleExpr,
     ExpressionDecision,
     FlowBeginning,
     HttpRequest,
@@ -451,3 +453,13 @@ def test_ambient_temperature_byte_exact():
 
     data = write_flow([begin, at], next_id=2)
     assert data == (FIXTURES / "ambient-temperature.flo").read_bytes()
+
+
+def test_android_version_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    av = AndroidVersion(stmt_id=2, cell_x=0, cell_y=6, min_level=DoubleExpr(21.0),
+                         max_level=DoubleExpr(33.0), var_level=VariableExpr("sdk"))
+    begin.on_complete = av
+
+    data = write_flow([begin, av], next_id=2)
+    assert data == (FIXTURES / "android-version.flo").read_bytes()

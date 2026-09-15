@@ -87,6 +87,7 @@ def _require_device_and_app():
     "alternative-launch.flo",
     "ambient-light.flo",
     "ambient-temperature.flo",
+    "android-version.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name

@@ -109,6 +109,7 @@ reverse-engineering notes):
   1336  AlternativeLaunch    automate_flo/blocks/alternative_launch.py
   1004  AmbientLight         automate_flo/blocks/ambient_light.py
   1005  AmbientTemperature   automate_flo/blocks/ambient_temperature.py
+  1244  AndroidVersion       automate_flo/blocks/android_version.py
   106   StringExpr (W)       automate_flo/base.py -- string literal expression wrapper
   104   DoubleExpr (J)       automate_flo/base.py -- double literal expression wrapper,
         plain 8-byte BE double, no length prefix (e.g. Delay's "duration")
