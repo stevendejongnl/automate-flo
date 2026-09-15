@@ -16,6 +16,7 @@ from automate_flo import (
     AirplaneModeSetState,
     Alarm,
     AlarmAdd,
+    AlternativeLaunch,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
@@ -421,3 +422,12 @@ def test_alarm_add_byte_exact():
 
     data = write_flow([begin, aa], next_id=2)
     assert data == (FIXTURES / "alarm-add.flo").read_bytes()
+
+
+def test_alternative_launch_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    al = AlternativeLaunch(stmt_id=2, cell_x=0, cell_y=6, title="My App")
+    begin.on_complete = al
+
+    data = write_flow([begin, al], next_id=2)
+    assert data == (FIXTURES / "alternative-launch.flo").read_bytes()
