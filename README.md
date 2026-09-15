@@ -13,47 +13,27 @@ Android 17 emulator.
 
 ## Status
 
-Supports 25 block types. Every one below has a fixture in `tests/fixtures/`
-that was pushed to a real Automate install on an Android emulator via adb and
-confirmed accepted by the app itself (see "Testing against the real app"):
+Supports 65 of the app's 423 block types (see `Q3/g.java` in the decompiled
+sources for the full registry — the goal is full coverage, worked through in
+batches; see `HANDOFF.md`). Every one has a fixture in `tests/fixtures/` that
+was pushed to a real Automate install on an Android emulator via adb and
+confirmed accepted by the app itself (see "Testing against the real app").
 
-- `FlowBeginning`
-- `AppKill`
-- `ActivityStart` ("App start" in the UI)
-- `Delay`
-- `CarModeEnabled` ("Car mode enabled?" — also the mechanism Automate uses to
-  detect Android Auto connecting; there is no dedicated Android Auto block)
-- `ToastShow` ("Show toast message")
-- `NotificationShow` ("Show notification")
-- `SmsSend` ("Send SMS")
-- `VariableAssign` ("Assign variable")
-- `WifiNetworkConnected` ("Wifi network connected?")
-- `BluetoothDeviceConnected` ("Bluetooth device connected?")
-- `BatteryLevel` ("Battery level")
-- `HttpRequest` ("HTTP request")
-- `ExpressionDecision` ("Expression")
-- `Label` (a connectable jump-target anchor; `Goto`, the block that jumps
-  *to* one, is not implemented — see the module docstring)
-- `ClipboardSet` ("Set clipboard")
-- `ClipboardGet` ("Get clipboard")
-- `WifiEnabled` ("Wifi enabled?")
-- `WifiSetState` ("Set wifi state")
-- `BluetoothEnabled` ("Bluetooth enabled?")
-- `BluetoothSetState` ("Set bluetooth state")
-- `ScreenBrightness` ("Screen brightness")
-- `ScreenBrightnessSet` ("Set screen brightness")
-- `DeviceKeepAwake` ("Keep device awake")
-- `LogAppend` ("Append to log")
+The full list with UI names and field-layout notes lives one level down, to
+avoid keeping a second copy here that goes stale: each block has its own
+docstring in `automate_flo/blocks/<snake_case_name>.py`, indexed by type id
+in `automate_flo/format.py`'s module docstring, and mirrored in the
+[wiki's Block Reference](https://github.com/stevendejongnl/automate-flo/wiki/Block-Reference).
 
 `android-auto-app-toggle.flo` (`FlowBeginning` → `ActivityStart` → `Delay`
 → `CarModeEnabled`) was additionally confirmed to run correctly end-to-end,
 not just import cleanly, on a real device.
 
-Automate has several hundred block types in total (see `Q3/g.java` in the
-decompiled sources for the full registry). Extending coverage means repeating
-the same process per block: read the decompiled field-serialization order,
-build it in the real app to confirm UI field order, and verify the generated
-file against a real Automate install (see below).
+Extending coverage means repeating the same process per block: read the
+decompiled field-serialization order, build it in the real app to confirm UI
+field order, and verify the generated file against a real Automate install
+(see below). `Goto` (id 1287) is a known, intentionally-skipped gap — see
+`HANDOFF.md` for why.
 
 ## Format summary
 
@@ -71,9 +51,11 @@ shape — blocks can loop back to earlier blocks), positive = first-seen, then
 dispatch to that type's field writer. Fixed-width ints/doubles are raw
 big-endian, not varint. Strings are `uvarint length + UTF-8 bytes`.
 
-Full details and per-block field layouts are documented in the
-`automate_flo/format.py` module docstring, including confidence levels
-(byte-exact device-verified vs. source-derived-and-UI-corroborated) per block.
+The wire-level details above are documented in `automate_flo/format.py`'s
+module docstring. Per-block field layouts, including confidence levels
+(byte-exact device-verified vs. source-derived-and-UI-corroborated), live in
+each block's own file under `automate_flo/blocks/`, indexed by type id in
+`format.py`'s docstring.
 
 ## Usage
 
