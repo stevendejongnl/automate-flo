@@ -33,7 +33,17 @@ from .ambient_temperature import AmbientTemperature
 from .android_version import AndroidVersion
 from .app_clear_cache import AppClearCache
 from .app_foreground import AppForeground
+from .app_installed import AppInstalled
 from .app_kill import AppKill
+from .app_kill_background import AppKillBackground
+from .app_list import AppList
+from .app_notifications_enabled import AppNotificationsEnabled
+from .app_notifications_priority_get import AppNotificationsPriorityGet
+from .app_notifications_priority_set import AppNotificationsPrioritySet
+from .app_notifications_set_state import AppNotificationsSetState
+from .app_notifications_visibility_get import AppNotificationsVisibilityGet
+from .app_notifications_visibility_set import AppNotificationsVisibilitySet
+from .app_op_mode import AppOpMode
 from .battery_level import BatteryLevel
 from .bluetooth_device_connected import BluetoothDeviceConnected
 from .bluetooth_enabled import BluetoothEnabled
@@ -80,7 +90,17 @@ ALL_BLOCKS = [
     AndroidVersion,
     AppClearCache,
     AppForeground,
+    AppInstalled,
     AppKill,
+    AppKillBackground,
+    AppList,
+    AppNotificationsEnabled,
+    AppNotificationsPriorityGet,
+    AppNotificationsPrioritySet,
+    AppNotificationsSetState,
+    AppNotificationsVisibilityGet,
+    AppNotificationsVisibilitySet,
+    AppOpMode,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,

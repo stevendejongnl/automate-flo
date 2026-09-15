@@ -22,7 +22,17 @@ from automate_flo import (
     AndroidVersion,
     AppClearCache,
     AppForeground,
+    AppInstalled,
     AppKill,
+    AppKillBackground,
+    AppList,
+    AppNotificationsEnabled,
+    AppNotificationsPriorityGet,
+    AppNotificationsPrioritySet,
+    AppNotificationsSetState,
+    AppNotificationsVisibilityGet,
+    AppNotificationsVisibilitySet,
+    AppOpMode,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,
@@ -486,3 +496,102 @@ def test_app_foreground_byte_exact():
 
     data = write_flow([begin, af], next_id=2)
     assert data == (FIXTURES / "app-foreground.flo").read_bytes()
+
+
+def test_app_installed_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ai = AppInstalled(stmt_id=2, cell_x=0, cell_y=6, package_name=PKG,
+                       var_package_name=VariableExpr("pkg"), var_display_name=VariableExpr("name"),
+                       var_version_code=VariableExpr("vcode"), var_version_name=VariableExpr("vname"),
+                       var_cache_size=VariableExpr("cache"), var_data_size=VariableExpr("data"),
+                       var_code_size=VariableExpr("code"), var_source_dirs=VariableExpr("dirs"))
+    begin.on_complete = ai
+
+    data = write_flow([begin, ai], next_id=2)
+    assert data == (FIXTURES / "app-installed.flo").read_bytes()
+
+
+def test_app_kill_background_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    akb = AppKillBackground(stmt_id=2, cell_x=0, cell_y=6, package_name=PKG)
+    begin.on_complete = akb
+
+    data = write_flow([begin, akb], next_id=2)
+    assert data == (FIXTURES / "app-kill-background.flo").read_bytes()
+
+
+def test_app_list_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    al = AppList(stmt_id=2, cell_x=0, cell_y=6, flags_include=1, flags_exclude=2,
+                 states=3, categories=-1, var_package_names=VariableExpr("pkgs"),
+                 var_display_names=VariableExpr("names"))
+    begin.on_complete = al
+
+    data = write_flow([begin, al], next_id=2)
+    assert data == (FIXTURES / "app-list.flo").read_bytes()
+
+
+def test_app_notifications_enabled_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ane = AppNotificationsEnabled(stmt_id=2, cell_x=0, cell_y=6, package_name=PKG)
+    begin.on_complete = ane
+
+    data = write_flow([begin, ane], next_id=2)
+    assert data == (FIXTURES / "app-notifications-enabled.flo").read_bytes()
+
+
+def test_app_notifications_priority_get_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    apg = AppNotificationsPriorityGet(stmt_id=2, cell_x=0, cell_y=6, package_name=PKG,
+                                       var_priority=VariableExpr("prio"))
+    begin.on_complete = apg
+
+    data = write_flow([begin, apg], next_id=2)
+    assert data == (FIXTURES / "app-notifications-priority-get.flo").read_bytes()
+
+
+def test_app_notifications_priority_set_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    aps = AppNotificationsPrioritySet(stmt_id=2, cell_x=0, cell_y=6, package_name=PKG, priority=2)
+    begin.on_complete = aps
+
+    data = write_flow([begin, aps], next_id=2)
+    assert data == (FIXTURES / "app-notifications-priority-set.flo").read_bytes()
+
+
+def test_app_notifications_set_state_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ass_ = AppNotificationsSetState(stmt_id=2, cell_x=0, cell_y=6, package_name=PKG, state=True)
+    begin.on_complete = ass_
+
+    data = write_flow([begin, ass_], next_id=2)
+    assert data == (FIXTURES / "app-notifications-set-state.flo").read_bytes()
+
+
+def test_app_notifications_visibility_get_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    avg = AppNotificationsVisibilityGet(stmt_id=2, cell_x=0, cell_y=6, package_name=PKG,
+                                         var_visibility=VariableExpr("vis"))
+    begin.on_complete = avg
+
+    data = write_flow([begin, avg], next_id=2)
+    assert data == (FIXTURES / "app-notifications-visibility-get.flo").read_bytes()
+
+
+def test_app_notifications_visibility_set_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    avs = AppNotificationsVisibilitySet(stmt_id=2, cell_x=0, cell_y=6, package_name=PKG, visibility=1)
+    begin.on_complete = avs
+
+    data = write_flow([begin, avs], next_id=2)
+    assert data == (FIXTURES / "app-notifications-visibility-set.flo").read_bytes()
+
+
+def test_app_op_mode_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    aom = AppOpMode(stmt_id=2, cell_x=0, cell_y=6, package_name=PKG, opstr="android:fine_location",
+                     mode=1, var_current_mode=VariableExpr("cur"))
+    begin.on_complete = aom
+
+    data = write_flow([begin, aom], next_id=2)
+    assert data == (FIXTURES / "app-op-mode.flo").read_bytes()

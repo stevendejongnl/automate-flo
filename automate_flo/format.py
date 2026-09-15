@@ -112,6 +112,16 @@ reverse-engineering notes):
   1244  AndroidVersion       automate_flo/blocks/android_version.py
   1235  AppClearCache        automate_flo/blocks/app_clear_cache.py
   1006  AppForeground        automate_flo/blocks/app_foreground.py
+  1007  AppInstalled         automate_flo/blocks/app_installed.py
+  1008  AppKillBackground    automate_flo/blocks/app_kill_background.py
+  1305  AppList              automate_flo/blocks/app_list.py
+  1242  AppNotificationsEnabled     automate_flo/blocks/app_notifications_enabled.py
+  1306  AppNotificationsPriorityGet automate_flo/blocks/app_notifications_priority_get.py
+  1307  AppNotificationsPrioritySet automate_flo/blocks/app_notifications_priority_set.py
+  1243  AppNotificationsSetState    automate_flo/blocks/app_notifications_set_state.py
+  1308  AppNotificationsVisibilityGet automate_flo/blocks/app_notifications_visibility_get.py
+  1309  AppNotificationsVisibilitySet automate_flo/blocks/app_notifications_visibility_set.py
+  1250  AppOpMode            automate_flo/blocks/app_op_mode.py
   106   StringExpr (W)       automate_flo/base.py -- string literal expression wrapper
   104   DoubleExpr (J)       automate_flo/base.py -- double literal expression wrapper,
         plain 8-byte BE double, no length prefix (e.g. Delay's "duration")

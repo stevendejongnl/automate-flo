@@ -90,6 +90,16 @@ def _require_device_and_app():
     "android-version.flo",
     "app-clear-cache.flo",
     "app-foreground.flo",
+    "app-installed.flo",
+    "app-kill-background.flo",
+    "app-list.flo",
+    "app-notifications-enabled.flo",
+    "app-notifications-priority-get.flo",
+    "app-notifications-priority-set.flo",
+    "app-notifications-set-state.flo",
+    "app-notifications-visibility-get.flo",
+    "app-notifications-visibility-set.flo",
+    "app-op-mode.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name
