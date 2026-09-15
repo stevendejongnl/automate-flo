@@ -33,6 +33,7 @@ from automate_flo import (
     AppNotificationsVisibilityGet,
     AppNotificationsVisibilitySet,
     AppOpMode,
+    AppOpModeSet,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,
@@ -595,3 +596,13 @@ def test_app_op_mode_byte_exact():
 
     data = write_flow([begin, aom], next_id=2)
     assert data == (FIXTURES / "app-op-mode.flo").read_bytes()
+
+
+def test_app_op_mode_set_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    aoms = AppOpModeSet(stmt_id=2, cell_x=0, cell_y=6, package_name=PKG,
+                         opstr="android:fine_location", mode=1)
+    begin.on_complete = aoms
+
+    data = write_flow([begin, aoms], next_id=2)
+    assert data == (FIXTURES / "app-op-mode-set.flo").read_bytes()
