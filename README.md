@@ -13,11 +13,13 @@ Android 17 emulator.
 
 ## Status
 
-Supports 65 of the app's 423 block types (see `Q3/g.java` in the decompiled
+Supports 90 of the app's 423 block types (see `Q3/g.java` in the decompiled
 sources for the full registry — the goal is full coverage, worked through in
-batches; see `HANDOFF.md`). Every one has a fixture in `tests/fixtures/` that
-was pushed to a real Automate install on an Android emulator via adb and
-confirmed accepted by the app itself (see "Testing against the real app").
+batches; see `HANDOFF.md`). Every one has a fixture (next to its block's
+source under `automate_flo/blocks/`, or in `tests/fixtures/` for the couple
+of cross-cutting multi-block flows) that was pushed to a real Automate
+install on an Android emulator via adb and confirmed accepted by the app
+itself (see "Testing against the real app").
 
 The full list with UI names and field-layout notes lives one level down, to
 avoid keeping a second copy here that goes stale: each block has its own
