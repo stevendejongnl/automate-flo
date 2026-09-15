@@ -87,6 +87,11 @@ on an Android-17 emulator):
   1236  AccountGenericAdd ("Account generic add" -- confirmed via live
         edit screen: exactly 3 text fields in order, accountName/
         username/password, all legal to leave null)
+  1000  AccountPick ("Account pick?" -- extends ActivityDecision extends
+        Decision directly; timeout/startActivity/notificationChannelId
+        not shown in the live edit screen but always present per source;
+        confirmed null-safe on-device, the picker null-field escape
+        hatch)
   106   W (string literal expression wrapper, implements InterfaceC1601v0)
   104   J (double literal expression wrapper -- plain 8-byte BE double, no
         length prefix; used for Delay's "duration" field, e.g. seconds)
@@ -190,12 +195,20 @@ these fields absent):
     varResponseBody (I3.l or null), varResponseHeaders (I3.l or null)
 
   ExpressionDecision(id=1058) extends Decision (onPositive/onNegative):
-    header, onPositive, onNegative, continuity, expression (any expression
-    object -- pass a StringExpr/DoubleExpr or None; more complex boolean
-    expressions built from expr.func.* nodes are out of scope for this
-    library's writer, but the reader will parse whatever type id it finds
-    since expression objects round-trip generically through write_object/
-    read_object)
+    header, onPositive, onNegative, expression (any expression object --
+    pass a StringExpr/DoubleExpr or None; more complex boolean expressions
+    built from expr.func.* nodes are out of scope for this library's
+    writer, but the reader will parse whatever type id it finds since
+    expression objects round-trip generically through write_object/
+    read_object). NO continuity field -- extends Decision directly.
+
+  AccountPick(id=1000) extends ActivityDecision extends Decision directly:
+    header, onPositive, onNegative, timeout (OBJECT ref, null),
+    startActivity (OBJECT ref, null; version 114 >= 9, always written),
+    notificationChannelId (OBJECT ref, null; version 114 >= 77, always
+    written), accountType (OBJECT ref, null; input filter, not exposed in
+    the live edit screen by default), varPickedAccountName (VariableExpr
+    or null), varPickedAccountType (VariableExpr or null)
 
   Label(id=1288) extends Action:
     header, onComplete, value (OBJECT ref, the label's name/id expression,
@@ -288,6 +301,7 @@ TYPE_DEVICE_KEEP_AWAKE = 1115
 TYPE_LOG_APPEND = 1093
 TYPE_ACCESSIBILITY_BUTTON = 1334
 TYPE_ACCOUNT_GENERIC_ADD = 1236
+TYPE_ACCOUNT_PICK = 1000
 
 
 def _zz_enc(n: int) -> int:
@@ -674,6 +688,35 @@ class ExpressionDecision(Block):
         self.expression = expression
 
 
+class AccountPick(Block):
+    """id 1000, UI name "Account pick?". Extends ActivityDecision extends
+    Decision DIRECTLY (like ExpressionDecision) -- onPositive/onNegative,
+    no continuity, then ActivityDecision's own timeout/startActivity/
+    notificationChannelId (all version-gated in source but always true
+    for the version this library targets), then accountType (input
+    filter) and the two output variables. The live edit screen only
+    surfaces "Show window directly if possible" (startActivity) and the
+    two output variables as visible widgets -- timeout/notificationChannelId/
+    accountType aren't shown but are still always present in the wire
+    format per source; confirmed null-safe on-device (this is the
+    picker-block null-field escape hatch noted in HANDOFF.md)."""
+    type_id = TYPE_ACCOUNT_PICK
+
+    def __init__(self, stmt_id, cell_x=0, cell_y=0, on_positive=None,
+                 on_negative=None, timeout=None, start_activity=None,
+                 notification_channel_id=None, account_type=None,
+                 var_picked_account_name=None, var_picked_account_type=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete=None)
+        self.on_positive = on_positive
+        self.on_negative = on_negative
+        self.timeout = timeout
+        self.start_activity = start_activity
+        self.notification_channel_id = notification_channel_id
+        self.account_type = account_type
+        self.var_picked_account_name = var_picked_account_name
+        self.var_picked_account_type = var_picked_account_type
+
+
 class Label(Block):
     """id 1288, UI name "Label". Extends Action -- a jump target for Goto;
     this library doesn't implement Goto (its field layout involves a
@@ -978,6 +1021,18 @@ class FlowWriter:
             self.write_object(obj.on_positive)
             self.write_object(obj.on_negative)
             self.write_object(obj.expression)
+            return
+
+        if isinstance(obj, AccountPick):
+            # ActivityDecision extends Decision directly -- no continuity.
+            self.write_object(obj.on_positive)
+            self.write_object(obj.on_negative)
+            self.write_object(obj.timeout)
+            self.write_object(obj.start_activity)          # version 114 >= 9
+            self.write_object(obj.notification_channel_id)  # version 114 >= 77
+            self.write_object(obj.account_type)
+            self.write_object(obj.var_picked_account_name)
+            self.write_object(obj.var_picked_account_type)
             return
 
         if isinstance(obj, (CarModeEnabled, BatteryLevel, WifiNetworkConnected,
@@ -1381,6 +1436,20 @@ class FlowReader:
             obj.continuity = None  # extends Decision directly, no continuity field
             obj.expression = self.read_object()
             return obj
+        if type_id == TYPE_ACCOUNT_PICK:
+            obj = AccountPick.__new__(AccountPick)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = None
+            obj.on_positive = self.read_object()
+            obj.on_negative = self.read_object()
+            obj.timeout = self.read_object()
+            obj.start_activity = self.read_object()
+            obj.notification_channel_id = self.read_object()
+            obj.account_type = self.read_object()
+            obj.var_picked_account_name = self.read_object()
+            obj.var_picked_account_type = self.read_object()
+            return obj
         if type_id == TYPE_LABEL:
             obj = Label.__new__(Label)
             self.seen.append(obj)
@@ -1553,6 +1622,8 @@ def describe(blocks):
             lines.append(f"HttpRequest(id={b.stmt_id})")
         elif isinstance(b, ExpressionDecision):
             lines.append(f"ExpressionDecision(id={b.stmt_id})")
+        elif isinstance(b, AccountPick):
+            lines.append(f"AccountPick(id={b.stmt_id})")
         elif isinstance(b, Label):
             lines.append(f"Label(id={b.stmt_id})")
         elif isinstance(b, ClipboardSet):

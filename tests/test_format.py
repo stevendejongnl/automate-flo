@@ -3,6 +3,7 @@ import pathlib
 from automate_flo import (
     AccessibilityButton,
     AccountGenericAdd,
+    AccountPick,
     ActivityStart,
     AppKill,
     BatteryLevel,
@@ -298,3 +299,12 @@ def test_account_generic_add_byte_exact():
 
     data = write_flow([begin, aga], next_id=2)
     assert data == (FIXTURES / "account-generic-add.flo").read_bytes()
+
+
+def test_account_pick_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ap = AccountPick(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = ap
+
+    data = write_flow([begin, ap], next_id=2)
+    assert data == (FIXTURES / "account-pick.flo").read_bytes()
