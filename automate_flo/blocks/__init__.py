@@ -28,6 +28,7 @@ from .airplane_mode_set_state import AirplaneModeSetState
 from .alarm import Alarm
 from .alarm_add import AlarmAdd
 from .alternative_launch import AlternativeLaunch
+from .ambient_light import AmbientLight
 from .app_kill import AppKill
 from .battery_level import BatteryLevel
 from .bluetooth_device_connected import BluetoothDeviceConnected
@@ -70,6 +71,7 @@ ALL_BLOCKS = [
     Alarm,
     AlarmAdd,
     AlternativeLaunch,
+    AmbientLight,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
