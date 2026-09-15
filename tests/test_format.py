@@ -37,6 +37,9 @@ from automate_flo import (
     AppPick,
     AppUsage,
     AppWidgetConfigure,
+    ArrayAdd,
+    ArrayRemove,
+    ArraySet,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,
@@ -639,3 +642,31 @@ def test_app_widget_configure_byte_exact():
 
     data = write_flow([begin, awc], next_id=2)
     assert data == (FIXTURES / "app-widget-configure.flo").read_bytes()
+
+
+def test_array_add_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    aa = ArrayAdd(stmt_id=2, cell_x=0, cell_y=6, var_array=VariableExpr("arr"), index=0, value="hello")
+    begin.on_complete = aa
+
+    data = write_flow([begin, aa], next_id=2)
+    assert data == (FIXTURES / "array-add.flo").read_bytes()
+
+
+def test_array_remove_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ar = ArrayRemove(stmt_id=2, cell_x=0, cell_y=6, var_array=VariableExpr("arr"), index=0,
+                      var_old_value=VariableExpr("old"))
+    begin.on_complete = ar
+
+    data = write_flow([begin, ar], next_id=2)
+    assert data == (FIXTURES / "array-remove.flo").read_bytes()
+
+
+def test_array_set_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    as_ = ArraySet(stmt_id=2, cell_x=0, cell_y=6, var_array=VariableExpr("arr"), index=0, value="hello")
+    begin.on_complete = as_
+
+    data = write_flow([begin, as_], next_id=2)
+    assert data == (FIXTURES / "array-set.flo").read_bytes()

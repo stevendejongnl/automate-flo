@@ -126,6 +126,9 @@ reverse-engineering notes):
   1237  AppPick              automate_flo/blocks/app_pick.py
   1310  AppUsage             automate_flo/blocks/app_usage.py
   1421  AppWidgetConfigure   automate_flo/blocks/app_widget_configure.py
+  1009  ArrayAdd             automate_flo/blocks/array_add.py
+  1010  ArrayRemove          automate_flo/blocks/array_remove.py
+  1011  ArraySet             automate_flo/blocks/array_set.py
   106   StringExpr (W)       automate_flo/base.py -- string literal expression wrapper
   104   DoubleExpr (J)       automate_flo/base.py -- double literal expression wrapper,
         plain 8-byte BE double, no length prefix (e.g. Delay's "duration")
