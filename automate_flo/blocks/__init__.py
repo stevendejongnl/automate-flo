@@ -29,6 +29,7 @@ from .alarm import Alarm
 from .alarm_add import AlarmAdd
 from .alternative_launch import AlternativeLaunch
 from .ambient_light import AmbientLight
+from .ambient_temperature import AmbientTemperature
 from .app_kill import AppKill
 from .battery_level import BatteryLevel
 from .bluetooth_device_connected import BluetoothDeviceConnected
@@ -72,6 +73,7 @@ ALL_BLOCKS = [
     AlarmAdd,
     AlternativeLaunch,
     AmbientLight,
+    AmbientTemperature,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,

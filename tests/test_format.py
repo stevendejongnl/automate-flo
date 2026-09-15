@@ -18,6 +18,7 @@ from automate_flo import (
     AlarmAdd,
     AlternativeLaunch,
     AmbientLight,
+    AmbientTemperature,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
@@ -441,3 +442,12 @@ def test_ambient_light_byte_exact():
 
     data = write_flow([begin, al], next_id=2)
     assert data == (FIXTURES / "ambient-light.flo").read_bytes()
+
+
+def test_ambient_temperature_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    at = AmbientTemperature(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = at
+
+    data = write_flow([begin, at], next_id=2)
+    assert data == (FIXTURES / "ambient-temperature.flo").read_bytes()
