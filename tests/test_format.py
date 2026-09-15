@@ -35,6 +35,7 @@ from automate_flo import (
     AppOpMode,
     AppOpModeSet,
     AppPick,
+    AppUsage,
     BatteryLevel,
     BluetoothDeviceConnected,
     BluetoothEnabled,
@@ -616,3 +617,14 @@ def test_app_pick_byte_exact():
 
     data = write_flow([begin, ap], next_id=2)
     assert data == (FIXTURES / "app-pick.flo").read_bytes()
+
+
+def test_app_usage_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    au = AppUsage(stmt_id=2, cell_x=0, cell_y=6, package_name=PKG,
+                  var_usage_duration=VariableExpr("dur"), var_last_used_timestamp=VariableExpr("last"),
+                  var_stats_start_timestamp=VariableExpr("start"), var_stats_end_timestamp=VariableExpr("end"))
+    begin.on_complete = au
+
+    data = write_flow([begin, au], next_id=2)
+    assert data == (FIXTURES / "app-usage.flo").read_bytes()
