@@ -1,6 +1,7 @@
 import pathlib
 
 from automate_flo import (
+    AccessibilityButton,
     ActivityStart,
     AppKill,
     BatteryLevel,
@@ -277,3 +278,12 @@ def test_log_append_byte_exact():
 
     data = write_flow([begin, la], next_id=2)
     assert data == (FIXTURES / "log-append.flo").read_bytes()
+
+
+def test_accessibility_button_byte_exact():
+    begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
+    ab = AccessibilityButton(stmt_id=2, cell_x=0, cell_y=6)
+    begin.on_complete = ab
+
+    data = write_flow([begin, ab], next_id=2)
+    assert data == (FIXTURES / "accessibility-button.flo").read_bytes()

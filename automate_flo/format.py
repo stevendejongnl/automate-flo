@@ -81,6 +81,9 @@ on an Android-17 emulator):
   1114  ScreenBrightnessSet ("Set screen brightness")
   1115  DeviceKeepAwake ("Keep device awake")
   1093  LogAppend ("Append to log")
+  1334  AccessibilityButton ("Accessibility button" -- confirmed via live
+        search: opening the real edit screen shows no additional input
+        fields, consistent with displayId being valid left null/absent)
   106   W (string literal expression wrapper, implements InterfaceC1601v0)
   104   J (double literal expression wrapper -- plain 8-byte BE double, no
         length prefix; used for Delay's "duration" field, e.g. seconds)
@@ -97,6 +100,11 @@ on an Android-17 emulator):
 Field layouts (fully traced from source; "OBJECT ref, null" means the field
 is legal to omit -- Automate accepted every generated sample below with
 these fields absent):
+
+  AccessibilityButton(id=1334) extends Action:
+    AbstractStatement header (stmt_id, cell_x, cell_y)
+    onComplete
+    displayId (OBJECT ref, null)
 
   ActivityStart(id=1001) extends IntentAction extends Action:
     AbstractStatement header (stmt_id, cell_x, cell_y)
@@ -268,6 +276,7 @@ TYPE_SCREEN_BRIGHTNESS = 1113
 TYPE_SCREEN_BRIGHTNESS_SET = 1114
 TYPE_DEVICE_KEEP_AWAKE = 1115
 TYPE_LOG_APPEND = 1093
+TYPE_ACCESSIBILITY_BUTTON = 1334
 
 
 def _zz_enc(n: int) -> int:
@@ -798,6 +807,15 @@ class LogAppend(Block):
         self.when_logging = when_logging
 
 
+class AccessibilityButton(Block):
+    """id 1334, UI name "Accessibility button". Extends Action."""
+    type_id = TYPE_ACCESSIBILITY_BUTTON
+
+    def __init__(self, stmt_id, display_id=None, cell_x=0, cell_y=0, on_complete=None):
+        super().__init__(stmt_id, cell_x, cell_y, on_complete)
+        self.display_id = display_id
+
+
 class StringExpr:
     """K3.W -- string literal expression wrapper, type id 106."""
     type_id = TYPE_STRING_EXPR
@@ -1083,6 +1101,8 @@ class FlowWriter:
         elif isinstance(obj, LogAppend):
             self.write_object(self._wrap_str(obj.message))
             self.write_object(obj.when_logging)
+        elif isinstance(obj, AccessibilityButton):
+            self.write_object(obj.display_id)
         elif isinstance(obj, FlowBeginning):
             self.w.write_utf(obj.title or "")
             self.w.write_u8(1 if obj.hidden else 0)   # version 114 >= 66
@@ -1436,6 +1456,13 @@ class FlowReader:
             obj.message = self.read_object()
             obj.when_logging = self.read_object()
             return obj
+        if type_id == TYPE_ACCESSIBILITY_BUTTON:
+            obj = AccessibilityButton.__new__(AccessibilityButton)
+            self.seen.append(obj)
+            self._read_stmt_header(obj)
+            obj.on_complete = self.read_object()
+            obj.display_id = self.read_object()
+            return obj
         raise NotImplementedError(f"Unknown/unhandled type id {type_id} at byte {self.r.pos}")
 
     def _read_stmt_header(self, obj):
@@ -1512,6 +1539,8 @@ def describe(blocks):
             lines.append(f"DeviceKeepAwake(id={b.stmt_id})")
         elif isinstance(b, LogAppend):
             lines.append(f"LogAppend(id={b.stmt_id})")
+        elif isinstance(b, AccessibilityButton):
+            lines.append(f"AccessibilityButton(id={b.stmt_id})")
     return "\n".join(lines)
 
 

@@ -70,6 +70,7 @@ def _require_device_and_app():
     "screen-brightness-set.flo",
     "device-keep-awake.flo",
     "log-append.flo",
+    "accessibility-button.flo",
 ])
 def test_fixture_imports_cleanly(fixture_name):
     path = FIXTURES / fixture_name
