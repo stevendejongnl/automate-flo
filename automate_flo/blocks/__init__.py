@@ -24,6 +24,7 @@ from .activity_start_voice import ActivityStartVoice
 from .adb_protocol_set import AdbProtocolSet
 from .adb_shell_command import AdbShellCommand
 from .airplane_mode_enabled import AirplaneModeEnabled
+from .airplane_mode_set_state import AirplaneModeSetState
 from .app_kill import AppKill
 from .battery_level import BatteryLevel
 from .bluetooth_device_connected import BluetoothDeviceConnected
@@ -62,6 +63,7 @@ ALL_BLOCKS = [
     AdbProtocolSet,
     AdbShellCommand,
     AirplaneModeEnabled,
+    AirplaneModeSetState,
     AppKill,
     BatteryLevel,
     BluetoothDeviceConnected,
