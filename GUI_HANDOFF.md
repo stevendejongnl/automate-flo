@@ -21,34 +21,56 @@ from it.
 
 ## Progress (updated 2026-09-16)
 
-**Batches 1-4 are done, committed, and pushed** (`origin/gui`; commits
-`1cddae5`, `7beb8c6`, `13c5796`, `9e2812e`, `63e00c0`). **Batch 5 (polish)
-is next and last** — required-field validation in the inspector, a README
-"GUI" section with dev commands.
+**All planned batches (1 through 5, plus 3.5) are done, committed, and
+pushed** (`origin/gui`; commits `1cddae5`, `7beb8c6`, `13c5796`, `9e2812e`,
+`63e00c0`, `e066c25`). The GUI now does everything this handoff doc set out
+to build: a drag-and-drop flow editor with a working palette, canvas,
+connections, inspector with validation, and New/Open/Save against the real
+backend. **Nothing is queued next** — see "What's genuinely not done" below
+for the deliberately-out-of-scope remainder (Docker/k8s) and any real gaps,
+before starting new work here.
 
 The whole frontend is TypeScript (Batch 3.5): every file under
 `frontend/src/` is `.ts`/`.test.ts`, `tsc --noEmit` and `npx vitest run` are
 both clean, `frontend/tsconfig.json` exists (strict mode), `npm run
 typecheck` runs it. Keep tsc clean — run it alongside vitest after every
-change, not just at the end of a batch.
+change.
 
 What works right now, verified live end-to-end with Playwright against the
 real FastAPI backend (not just unit tests): open the app, click a block type
 in the left palette to add it to the canvas, drag it around (position snaps
 to the grid via `frontend/src/helpers/grid.ts`'s 16px/cell), click it to
-select it, edit its fields in the right-hand inspector. A node shows the
-right number of connector ports (1 for action-category blocks, 2 —
-positive/negative — for decision-category, fetched from the real
-`/api/blocks` schema via `frontend/src/helpers/schema-cache.ts`); dragging
-from a port to another node's card creates an edge, drawn as an SVG line.
-Selecting a node and pressing Delete/Backspace removes it (cascading its
-edges), guarded against firing while a text input has focus. The toolbar's
-New/Open/Save all work against the real backend: New clears the canvas,
-Open reads a real `.flo` file and loads it, Save exports the current graph
-and downloads it as `flow.flo` — confirmed both that a complete flow saves
-successfully and that the backend correctly rejects (400) a flow with an
-unfilled required field (e.g. `ExpressionDecision`'s `expression`), which is
-exactly the gap Batch 5 closes on the frontend side.
+select it, edit its fields in the right-hand inspector — a required-but-
+empty field is highlighted red. A node shows the right number of connector
+ports (1 for action-category blocks, 2 — positive/negative — for
+decision-category, fetched from the real `/api/blocks` schema via
+`frontend/src/helpers/schema-cache.ts`); dragging from a port to another
+node's card creates an edge, drawn as an SVG line. Selecting a node and
+pressing Delete/Backspace removes it (cascading its edges), guarded against
+firing while a text input has focus. The toolbar's New/Open/Save all work
+against the real backend: New clears the canvas, Open reads a real `.flo`
+file and loads it, Save exports the current graph and downloads it as
+`flow.flo` — blocked with an inline message (not a JS `alert`) if any
+required field is empty, otherwise it succeeds. `automate_flo_gui/server.py`
+also now serves the built frontend directly (`npm run build`, then a single
+`uv run uvicorn automate_flo_gui.server:app` serves everything, no separate
+dev server needed) — see the README's new "GUI" section.
+
+### What's genuinely not done
+
+- **Docker/k8s manifests** — explicitly deferred from the start (see the
+  original "Stack decision" section below), not part of any batch. Would be
+  its own follow-up, not a continuation of Batches 1-5.
+- **No automated test for the static-mount behavior** in
+  `automate_flo_gui/server.py` (the `frontend/dist` `StaticFiles` mount) —
+  it's guarded by an `is_dir()` check that's always false in CI (the
+  frontend isn't built there), so there was nothing to assert without
+  building the frontend as part of the Python test run, which felt like
+  scope creep for a doc-accuracy fix. Verified manually instead (build the
+  frontend, curl `/`, `/assets/...`, and `/api/blocks` against one running
+  server — all three correct). Worth a real test if this becomes load-bearing.
+- **No visual polish pass beyond what each batch needed** — spacing, colors,
+  empty-states, etc. are functional but plain. Nobody has asked for this yet.
 
 ### Lessons from Batches 1-3.5, worth reading before starting Batch 4
 
