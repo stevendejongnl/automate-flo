@@ -23,7 +23,17 @@ from it.
 
 **Batches 1-3 are done and committed** (commits `1cddae5`, `7beb8c6`,
 `13c5796` on this branch). Batch 4 (connections + import/export UX) and
-Batch 5 (polish) are not started. Resume with Batch 4 below.
+Batch 5 (polish) are not started.
+
+**Before starting Batch 4: convert the whole frontend from JS to
+TypeScript first.** This was decided after Batch 3 landed (2026-09-16) and
+is a new prerequisite step, not yet done. Convert every existing file under
+`frontend/src/` (components, helpers, and their co-located tests) from
+`.js`/`.test.js` to `.ts`/`.test.ts`, update `frontend/package.json` (add
+`typescript`, a `tsc --noEmit` typecheck script) and `frontend/vite.config.js`
+/ `frontend/index.html` references accordingly, and get the full existing
+test suite green again on `.ts` before writing any Batch 4 code. Do this as
+its own batch (call it Batch 3.5), not folded into Batch 4.
 
 What works right now, verified live end-to-end with Playwright against the
 real FastAPI backend (not just unit tests): open the app, click a block type
@@ -334,6 +344,22 @@ pytest` before moving to the next.
   markup of its own — that's `inspector-field`'s job.
 - Clicking a `palette-item` adds a new node of that type to the store at a
   default position.
+
+### Batch 3.5 — convert frontend to TypeScript (do this before Batch 4)
+
+- Rename every `frontend/src/**/*.js` and `*.test.js` to `.ts`/`.test.ts`
+  (components, helpers, `main.js`) and add types incrementally rather than
+  reaching for `any` — the codebase is small enough to type properly as you
+  go (Lit's own types for `LitElement`/`html`/`css`/reactive properties,
+  the Graph JSON shapes as real `interface`/`type` declarations shared
+  between `flow-store.ts`, `graph`-related code, and `api-client.ts`).
+- Add `typescript` (and `lit`'s own types are bundled, no separate
+  `@types/lit` needed) to `frontend/package.json`'s devDependencies, plus a
+  `frontend/tsconfig.json`. Add a `"typecheck": "tsc --noEmit"` script.
+- Update `frontend/vite.config.js` and `frontend/index.html` if any file
+  extensions are referenced explicitly.
+- Get `npx vitest run` and `npx tsc --noEmit` both clean before moving on to
+  Batch 4 — don't let type errors pile up to fix "later".
 
 ### Batch 4 — connections + import/export
 - `frontend/src/helpers/port-geometry.js`: given a node's position/type,
