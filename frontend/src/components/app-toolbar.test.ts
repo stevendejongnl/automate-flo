@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { FlowStore } from "../helpers/flow-store.js";
 import { importFlow, exportFlow } from "../helpers/api-client.js";
+import { getBlockSchemas } from "../helpers/schema-cache.js";
 import { createEl } from "../helpers/test-utils.js";
 import "./app-toolbar.js";
 import type { AppToolbar } from "./app-toolbar.js";
@@ -9,17 +10,24 @@ vi.mock("../helpers/api-client.js", () => ({
   importFlow: vi.fn(),
   exportFlow: vi.fn(),
 }));
+vi.mock("../helpers/schema-cache.js", () => ({
+  getBlockSchemas: vi.fn(),
+}));
 
 describe("AppToolbar", () => {
   let el: AppToolbar;
   let store: FlowStore;
+  const mockGetBlockSchemas = vi.mocked(getBlockSchemas);
 
-  beforeEach(async () => {
+  beforeEach(() => {
     store = new FlowStore();
     el = createEl<AppToolbar>("app-toolbar");
     el.store = store;
-    document.body.appendChild(el);
-    await el.updateComplete;
+    // Not appended yet -- each test configures the getBlockSchemas mock
+    // first, then appends (which triggers connectedCallback/_loadSchemas),
+    // so the mock's resolved value is in place before the component's one
+    // and only call to it (see node-inspector.test.ts for the same pattern
+    // and why it matters).
   });
 
   afterEach(() => {
@@ -30,6 +38,9 @@ describe("AppToolbar", () => {
   });
 
   it("clicking 'New' resets the store", async () => {
+    mockGetBlockSchemas.mockResolvedValue([]);
+    document.body.appendChild(el);
+    await el.updateComplete;
     store.addNode("Delay", 0, 0);
     store.selectNode("n1");
     [...el.shadowRoot!.querySelectorAll("button")].find(b => b.textContent === "New")!.click();
@@ -38,12 +49,18 @@ describe("AppToolbar", () => {
   });
 
   it("clicking 'Open' triggers a click on the hidden file input", async () => {
+    mockGetBlockSchemas.mockResolvedValue([]);
+    document.body.appendChild(el);
+    await el.updateComplete;
     const clickSpy = vi.spyOn(HTMLInputElement.prototype, "click");
     [...el.shadowRoot!.querySelectorAll("button")].find(b => b.textContent === "Open")!.click();
     expect(clickSpy).toHaveBeenCalled();
   });
 
   it("selecting a file loads the graph into the store", async () => {
+    mockGetBlockSchemas.mockResolvedValue([]);
+    document.body.appendChild(el);
+    await el.updateComplete;
     URL.createObjectURL = vi.fn(() => "blob:mock-url");
     URL.revokeObjectURL = vi.fn();
     // jsdom's File/Blob don't implement .arrayBuffer() in this project's
@@ -60,16 +77,35 @@ describe("AppToolbar", () => {
     expect(store.nodes).toEqual([{ id: "n1", type: "Delay", x: 0, y: 0, fields: {} }]);
   });
 
-  it("clicking 'Save' triggers a download", async () => {
+  it("clicking 'Save' triggers a download when all required fields are filled", async () => {
+    mockGetBlockSchemas.mockResolvedValue([
+      { type_name: "Delay", type_id: 1046, category: "action", doc_summary: "Waits", fields: [{ name: "seconds", required: true, default: null, kind: "number" }] }
+    ]);
+    document.body.appendChild(el);
+    await el.updateComplete;
     URL.createObjectURL = vi.fn(() => "blob:mock-url");
     URL.revokeObjectURL = vi.fn();
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-    store.addNode("Delay", 0, 0);
-    const graph = { next_id: 1, nodes: [{ id: "n1", type: "Delay", x: 0, y: 0, fields: {} }], edges: [] };
+    store.addNode("Delay", 0, 0, { seconds: 5 });
+    const graph = { next_id: 1, nodes: [{ id: "n1", type: "Delay", x: 0, y: 0, fields: { seconds: 5 } }], edges: [] };
     vi.mocked(exportFlow).mockResolvedValue(new TextEncoder().encode("fake flo bytes").buffer);
     [...el.shadowRoot!.querySelectorAll("button")].find(b => b.textContent === "Save")!.click();
     await new Promise(r => setTimeout(r, 0));
     expect(exportFlow).toHaveBeenCalledWith(graph);
     expect(clickSpy).toHaveBeenCalled();
+  });
+
+  it("blocks 'Save' and shows an inline message when a required field is empty", async () => {
+    mockGetBlockSchemas.mockResolvedValue([
+      { type_name: "Delay", type_id: 1046, category: "action", doc_summary: "Waits", fields: [{ name: "seconds", required: true, default: null, kind: "number" }] }
+    ]);
+    document.body.appendChild(el);
+    await el.updateComplete;
+    store.addNode("Delay", 0, 0);
+    [...el.shadowRoot!.querySelectorAll("button")].find(b => b.textContent === "Save")!.click();
+    await new Promise(r => setTimeout(r, 0));
+    await el.updateComplete;
+    expect(exportFlow).not.toHaveBeenCalled();
+    expect(el.shadowRoot!.querySelector(".error")).not.toBeNull();
   });
 });

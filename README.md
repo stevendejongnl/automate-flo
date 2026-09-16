@@ -80,6 +80,52 @@ open("my-flow.flo", "wb").write(data)
 
 Import the resulting file in Automate via Flows → Import.
 
+## GUI
+
+A drag-and-drop editor is available as an alternative to hand-writing
+Python: a block palette on the left, a canvas in the middle for placing and
+connecting blocks, and a field inspector on the right — closer to the real
+Automate app's own block editor. It's a FastAPI backend (wrapping this
+library's `parse_flow`/`write_flow` and a block-schema introspection layer)
+plus a Lit + TypeScript frontend under `automate_flo_gui/` and `frontend/`.
+
+Install the extra backend dependencies once:
+
+```bash
+uv sync --extra gui
+```
+
+Then, in one terminal, run the backend:
+
+```bash
+uv run uvicorn automate_flo_gui.server:app --reload
+```
+
+And in another, install and run the frontend dev server:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open the URL Vite prints (typically `http://localhost:5173`) — it proxies
+`/api` requests to the backend on port 8000. `npm run typecheck` runs the
+TypeScript compiler in check-only mode, and `npm run test` runs the
+frontend's Vitest suite (`uv run pytest` from the repo root still covers
+the Python side, including `automate_flo_gui`'s own tests).
+
+For a single deployable artifact, build the frontend and let FastAPI serve
+it directly instead of running two dev servers:
+
+```bash
+cd frontend && npm run build && cd ..
+uv run uvicorn automate_flo_gui.server:app
+```
+
+(`npm run build` outputs to `frontend/dist/`, which the backend mounts as
+static files at `/` when present — no separate frontend server needed.)
+
 ## Tests
 
 ```

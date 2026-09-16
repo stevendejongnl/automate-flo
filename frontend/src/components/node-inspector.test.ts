@@ -59,6 +59,7 @@ describe("NodeInspector", () => {
     expect(field.fieldName).toBe("seconds");
     expect(field.fieldKind).toBe("number");
     expect(field.value).toBe(5);
+    expect(field.required).toBe(true);
   });
 
   it("updates store when a field is changed", async () => {

@@ -83,6 +83,7 @@ export class NodeInspector extends LitElement {
           .fieldName=${field.name}
           .fieldKind=${field.kind}
           .value=${node.fields[field.name]}
+          .required=${field.required}
           @field-changed=${this._onFieldChanged}
         ></inspector-field>
       `)}

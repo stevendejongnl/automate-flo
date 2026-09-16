@@ -107,4 +107,56 @@ describe("InspectorField", () => {
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy.mock.calls[0][0].detail).toEqual({ fieldName: "seconds", value: 20 });
   });
+
+  it("highlights a required-but-empty string field", async () => {
+    el = createEl<InspectorField>("inspector-field");
+    el.fieldName = "url";
+    el.fieldKind = "string";
+    el.value = "";
+    el.required = true;
+    document.body.appendChild(el);
+    await el.updateComplete;
+
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>("input[type='text']")!;
+    expect(input.classList.contains("missing")).toBe(true);
+  });
+
+  it("does not highlight a required field once it has a value", async () => {
+    el = createEl<InspectorField>("inspector-field");
+    el.fieldName = "url";
+    el.fieldKind = "string";
+    el.value = "https://example.com";
+    el.required = true;
+    document.body.appendChild(el);
+    await el.updateComplete;
+
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>("input[type='text']")!;
+    expect(input.classList.contains("missing")).toBe(false);
+  });
+
+  it("does not highlight an empty field that is not required", async () => {
+    el = createEl<InspectorField>("inspector-field");
+    el.fieldName = "url";
+    el.fieldKind = "string";
+    el.value = "";
+    el.required = false;
+    document.body.appendChild(el);
+    await el.updateComplete;
+
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>("input[type='text']")!;
+    expect(input.classList.contains("missing")).toBe(false);
+  });
+
+  it("never highlights a required boolean field regardless of value", async () => {
+    el = createEl<InspectorField>("inspector-field");
+    el.fieldName = "enabled";
+    el.fieldKind = "boolean";
+    el.value = false;
+    el.required = true;
+    document.body.appendChild(el);
+    await el.updateComplete;
+
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>("input[type='checkbox']")!;
+    expect(input.classList.contains("missing")).toBe(false);
+  });
 });
