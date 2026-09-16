@@ -67,4 +67,42 @@ describe("FlowCanvas", () => {
     await el.updateComplete;
     expect(store.selectedNodeId).toBe(null);
   });
+
+  it("renders an edge-line for each edge in the store", async () => {
+    const n1 = store.addNode("Delay", 0, 0);
+    const n2 = store.addNode("Delay", 6, 0);
+    store.addEdge(n1, n2, "complete");
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelectorAll("edge-line")).toHaveLength(1);
+  });
+
+  it("updates the store when a flow-node dispatches flow-node-connected", async () => {
+    const n1 = store.addNode("Delay", 0, 0);
+    const n2 = store.addNode("Delay", 6, 0);
+    await el.updateComplete;
+    const flowNodeEl = el.shadowRoot!.querySelector("flow-node") as FlowNode;
+    flowNodeEl.dispatchEvent(new CustomEvent("flow-node-connected", { detail: { from: n1, kind: "complete", to: n2 }, bubbles: true, composed: true }));
+    await el.updateComplete;
+    expect(store.edges).toEqual([{ from: n1, to: n2, kind: "complete" }]);
+  });
+
+  it("removes the selected node when Delete is pressed", async () => {
+    const nodeId = store.addNode("Delay", 0, 0);
+    store.selectNode(nodeId);
+    await el.updateComplete;
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete" }));
+    expect(store.nodes).toEqual([]);
+  });
+
+  it("does not delete when Backspace is pressed while an input is focused", async () => {
+    const nodeId = store.addNode("Delay", 0, 0);
+    store.selectNode(nodeId);
+    await el.updateComplete;
+    const input = document.createElement("input");
+    document.body.appendChild(input);
+    input.focus();
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", bubbles: true }));
+    expect(store.nodes).toHaveLength(1);
+    document.body.removeChild(input);
+  });
 });

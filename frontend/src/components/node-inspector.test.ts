@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { FlowStore } from "../helpers/flow-store.js";
-import { fetchBlockSchemas } from "../helpers/api-client.js";
+import { getBlockSchemas } from "../helpers/schema-cache.js";
 import "./node-inspector.js";
 import type { NodeInspector } from "./node-inspector.js";
 import type { InspectorField } from "./inspector-field.js";
 import { createEl } from "../helpers/test-utils.js";
 
-vi.mock("../helpers/api-client.js", () => ({ fetchBlockSchemas: vi.fn() }));
+vi.mock("../helpers/schema-cache.js", () => ({ getBlockSchemas: vi.fn() }));
 
 describe("NodeInspector", () => {
   let el: NodeInspector;
   let store: FlowStore;
-  const mockFetchBlockSchemas = vi.mocked(fetchBlockSchemas);
+  const mockFetchBlockSchemas = vi.mocked(getBlockSchemas);
 
   beforeEach(() => {
     store = new FlowStore();

@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "lit";
-import { fetchBlockSchemas } from "../helpers/api-client.js";
+import { getBlockSchemas } from "../helpers/schema-cache.js";
 import { FlowStore } from "../helpers/flow-store.js";
 import type { BlockSchema } from "../types.js";
 import type { GraphNode } from "../types.js";
@@ -57,7 +57,7 @@ export class NodeInspector extends LitElement {
 
   async _loadSchemas(): Promise<void> {
     try {
-      this._schemas = await fetchBlockSchemas();
+      this._schemas = await getBlockSchemas();
     } catch {
       this._schemas = [];
     }

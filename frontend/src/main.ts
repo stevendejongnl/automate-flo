@@ -2,14 +2,21 @@ import "./components/app-shell.js";
 import "./components/block-palette.js";
 import "./components/flow-canvas.js";
 import "./components/node-inspector.js";
+import "./components/app-toolbar.js";
 import type { AppShell } from "./components/app-shell.js";
 import type { FlowCanvas } from "./components/flow-canvas.js";
 import type { NodeInspector } from "./components/node-inspector.js";
+import type { AppToolbar } from "./components/app-toolbar.js";
 import { FlowStore } from "./helpers/flow-store.js";
 
 const store = new FlowStore();
 
 const appShell = document.querySelector<AppShell>("app-shell")!;
+
+const toolbar = document.createElement("app-toolbar") as AppToolbar;
+toolbar.setAttribute("slot", "toolbar");
+toolbar.store = store;
+appShell.appendChild(toolbar);
 
 const palette = document.createElement("block-palette");
 palette.setAttribute("slot", "palette");

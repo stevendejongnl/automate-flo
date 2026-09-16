@@ -63,4 +63,36 @@ describe("FlowNode", () => {
     await el.updateComplete;
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ detail: { nodeId: el.nodeId, x: 52, y: 63 } }));
   });
+
+  it("renders one .port for an action-category node", async () => {
+    el.category = "action";
+    await el.updateComplete;
+    const ports = el.shadowRoot!.querySelectorAll(".port");
+    expect(ports).toHaveLength(1);
+    expect(ports[0].classList.contains("port-complete")).toBe(true);
+  });
+
+  it("renders two .port elements for a decision-category node", async () => {
+    el.category = "decision";
+    await el.updateComplete;
+    const ports = el.shadowRoot!.querySelectorAll(".port");
+    expect(ports).toHaveLength(2);
+    expect(ports[0].classList.contains("port-positive")).toBe(true);
+    expect(ports[1].classList.contains("port-negative")).toBe(true);
+  });
+
+  it("re-dispatches a port's 'flow-port-connected' event as 'flow-node-connected' with its own id as 'from'", async () => {
+    el.nodeId = "n1";
+    el.category = "action";
+    await el.updateComplete;
+    const spy = vi.fn();
+    el.addEventListener('flow-node-connected', spy);
+    const port = el.shadowRoot!.querySelector("flow-port")!;
+    port.dispatchEvent(new CustomEvent('flow-port-connected', {
+      detail: { kind: "complete", targetNodeId: "n2" },
+      bubbles: true,
+      composed: true,
+    }));
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ detail: { from: "n1", kind: "complete", to: "n2" } }));
+  });
 });

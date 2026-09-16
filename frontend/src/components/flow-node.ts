@@ -1,9 +1,12 @@
 import { LitElement, html, css } from "lit";
+import type { EdgeKind, BlockCategory } from "../types.js";
+import "./flow-port.js";
 
 export class FlowNode extends LitElement {
   static properties = {
     nodeId: { type: String },
     blockType: { type: String },
+    category: { type: String },
     x: { type: Number },
     y: { type: Number },
     selected: { type: Boolean, reflect: false, attribute: false, hasChanged: (newVal: boolean, oldVal: boolean) => newVal !== oldVal },
@@ -15,6 +18,7 @@ export class FlowNode extends LitElement {
       display: block;
     }
     .card {
+      position: relative;
       border: 1px solid #888;
       border-radius: 4px;
       background: white;
@@ -29,10 +33,19 @@ export class FlowNode extends LitElement {
     }
     .type { font-weight: bold; }
     .id { font-size: 11px; color: #888; }
+    .port {
+      position: absolute;
+      right: -6px;
+      transform: translateY(-50%);
+    }
+    .port-complete { top: 50%; }
+    .port-positive { top: 25%; }
+    .port-negative { top: 75%; }
   `;
 
   declare nodeId: string;
   declare blockType: string;
+  declare category: BlockCategory;
   declare x: number;
   declare y: number;
   declare selected: boolean;
@@ -95,13 +108,34 @@ export class FlowNode extends LitElement {
     this.removeEventListener('pointerup', this._onPointerUp);
   }
 
+  _onPortConnected(event: CustomEvent<{ kind: EdgeKind; targetNodeId: string }>): void {
+    event.stopPropagation();
+    this.dispatchEvent(new CustomEvent('flow-node-connected', {
+      detail: { from: this.nodeId, kind: event.detail.kind, to: event.detail.targetNodeId },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  _renderPorts() {
+    if (this.category === "decision") {
+      return html`
+        <flow-port class="port port-positive" .kind=${"positive"}></flow-port>
+        <flow-port class="port port-negative" .kind=${"negative"}></flow-port>
+      `;
+    }
+    return html`<flow-port class="port port-complete" .kind=${"complete"}></flow-port>`;
+  }
+
   render() {
     return html`
       <div class="card ${this.selected ? 'selected' : ''}"
            @pointerdown=${this._onPointerDown}
-           @click=${this._onClick}>
+           @click=${this._onClick}
+           @flow-port-connected=${this._onPortConnected}>
         <div class="type">${this.blockType}</div>
         <div class="id">${this.nodeId}</div>
+        ${this._renderPorts()}
       </div>
     `;
   }
