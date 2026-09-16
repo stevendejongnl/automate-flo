@@ -21,35 +21,34 @@ from it.
 
 ## Progress (updated 2026-09-16)
 
-**Batches 1-3.5 are done and committed and pushed** (`origin/gui`; commits
-`1cddae5`, `7beb8c6`, `13c5796`, `9e2812e`). **Batch 4 (connections +
-import/export UX) is next** — no more prerequisites, start there directly.
-Batch 5 (polish) is not started.
+**Batches 1-4 are done, committed, and pushed** (`origin/gui`; commits
+`1cddae5`, `7beb8c6`, `13c5796`, `9e2812e`, `63e00c0`). **Batch 5 (polish)
+is next and last** — required-field validation in the inspector, a README
+"GUI" section with dev commands.
 
-The whole frontend is TypeScript now (Batch 3.5, done 2026-09-16): every
-file under `frontend/src/` is `.ts`/`.test.ts`, `tsc --noEmit` and
-`npx vitest run` are both clean, `frontend/tsconfig.json` exists (strict
-mode), and `npm run typecheck` runs it. Keep tsc clean going forward —
-run it alongside vitest after every change in Batch 4/5, not just at the
-end of a batch.
+The whole frontend is TypeScript (Batch 3.5): every file under
+`frontend/src/` is `.ts`/`.test.ts`, `tsc --noEmit` and `npx vitest run` are
+both clean, `frontend/tsconfig.json` exists (strict mode), `npm run
+typecheck` runs it. Keep tsc clean — run it alongside vitest after every
+change, not just at the end of a batch.
 
 What works right now, verified live end-to-end with Playwright against the
 real FastAPI backend (not just unit tests): open the app, click a block type
 in the left palette to add it to the canvas, drag it around (position snaps
-to the grid, matching `.flo`'s `cell_x`/`cell_y` units via
-`frontend/src/helpers/grid.ts`'s 16px/cell), click it to select it, edit its
-fields in the right-hand inspector, see the change land in the shared
-`FlowStore`. Backend `/api/blocks`, `/api/flow/import`, `/api/flow/export`
-all work and were round-tripped against a real device-verified fixture
-(`tests/fixtures/android-auto-app-toggle.flo`, including its
-Delay↔CarModeEnabled loop).
-
-Not yet wired: dragging a connection between node ports (no `flow-port.ts`/
-`edge-line.ts`/`port-geometry.ts` yet, so edges can only be set by directly
-calling `FlowStore.addEdge()`, not from the UI), and the toolbar
-(New/Open/Save) doesn't exist yet — `main.ts` composes palette+canvas+
-inspector but has no way to trigger `/api/flow/import` or `/api/flow/export`
-from the browser yet.
+to the grid via `frontend/src/helpers/grid.ts`'s 16px/cell), click it to
+select it, edit its fields in the right-hand inspector. A node shows the
+right number of connector ports (1 for action-category blocks, 2 —
+positive/negative — for decision-category, fetched from the real
+`/api/blocks` schema via `frontend/src/helpers/schema-cache.ts`); dragging
+from a port to another node's card creates an edge, drawn as an SVG line.
+Selecting a node and pressing Delete/Backspace removes it (cascading its
+edges), guarded against firing while a text input has focus. The toolbar's
+New/Open/Save all work against the real backend: New clears the canvas,
+Open reads a real `.flo` file and loads it, Save exports the current graph
+and downloads it as `flow.flo` — confirmed both that a complete flow saves
+successfully and that the backend correctly rejects (400) a flow with an
+unfilled required field (e.g. `ExpressionDecision`'s `expression`), which is
+exactly the gap Batch 5 closes on the frontend side.
 
 ### Lessons from Batches 1-3.5, worth reading before starting Batch 4
 
@@ -405,6 +404,59 @@ pytest` before moving to the next.
   extensions are referenced explicitly.
 - Get `npx vitest run` and `npx tsc --noEmit` both clean before moving on to
   Batch 4 — don't let type errors pile up to fix "later".
+
+### Lessons from Batch 4 (done, connections + import/export)
+
+- **`<line>`/`<circle>`/other bare SVG elements need Lit's `svg` template
+  tag, not `html`.** A component whose `render()` returns raw SVG content
+  as its own top-level template (not wrapped in a literal `<svg>...</svg>`
+  within that SAME template) must `import { svg } from "lit"` and use
+  `` svg`<line .../>` `` — `html` creates the element in the HTML
+  namespace, which real browsers won't render as SVG graphics, even though
+  jsdom's lenient parser doesn't care and a unit test checking
+  `.getAttribute(...)` values passes regardless. This bit `edge-line.ts`.
+  A component that renders a literal `<svg>` wrapper AROUND custom-element
+  children (like `flow-canvas.ts`'s edge overlay) is fine with plain `html`
+  — custom elements aren't SVG-namespaced either way; it's specifically
+  bare native SVG tags at the top of a template that need it.
+- **The type-only-import-elision gap (see Batch 3.5) recurred once more**
+  in a fresh (not converted) file's test, `app-toolbar.test.ts`. Keep
+  checking for it on every new typed test file, it's not just a
+  conversion-era risk.
+- **A constructor that binds a method which no longer exists throws on
+  construction, silently breaking every test that creates the component.**
+  `flow-port.ts`'s first draft kept `this._onPointerMove =
+  this._onPointerMove.bind(this)` in the constructor after the
+  corresponding `_onPointerMove` method had been dropped from the spec
+  (this component only needed a pointerup handler) — `undefined.bind` threw
+  immediately. When asking for a component with fewer event handlers than
+  a similar existing one, double-check the constructor's bindings match
+  the methods that actually exist.
+- **A test that never appends its element to `document.body` before
+  querying its shadow DOM fails universally**, not just on one assertion —
+  `app-toolbar.test.ts`'s first draft queried `el.shadowRoot!.querySelectorAll(...)`
+  with `el` still disconnected, so Lit's first render had never run and
+  every test got an empty shadow root. This is a variant of the
+  "type-only-import-elision" class of bug (missing setup, not missing
+  import) — same symptom (empty/null shadowRoot), different cause; check
+  both when a component test can't find anything in its shadow DOM.
+- **Delegating "wire these new pieces into these existing, already-tested
+  files" to aider is riskier than writing new standalone files.** Given
+  Batch 3.5's discovery that a "whole" rewrite can silently drop unrelated
+  content (dropped `static styles` once), the flow-node.ts/flow-canvas.ts/
+  main.ts integration work for Batch 4 (adding ports, wiring events, the
+  SVG overlay, delete-key handling) was done directly rather than
+  delegated — worth continuing that split in Batch 5 and beyond: delegate
+  brand-new standalone files, do surgical edits to existing delicate files
+  yourself.
+- **jsdom gaps keep surfacing per-component, not just once**: after
+  `PointerEvent`, `document.elementFromPoint`, and constructable
+  stylesheets in earlier batches, this batch added `URL.createObjectURL`/
+  `URL.revokeObjectURL` (not implemented — assign `vi.fn()` stubs directly,
+  `vi.spyOn` needs the property to already exist) and `File`/`Blob`'s
+  `.arrayBuffer()` (also not implemented — use a plain `{ arrayBuffer: ()
+  => Promise.resolve(buf) }` stub object cast to `File` instead of a real
+  `File` instance in tests that need to read one).
 
 ### Batch 4 — connections + import/export
 
