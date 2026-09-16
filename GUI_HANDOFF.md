@@ -19,6 +19,105 @@ Never touch `automate_flo/` (the core codec library) in this work — it is
 zero-dependency and done; the GUI is purely a new layer on top that imports
 from it.
 
+## Progress (updated 2026-09-16)
+
+**Batches 1-3 are done and committed** (commits `1cddae5`, `7beb8c6`,
+`13c5796` on this branch). Batch 4 (connections + import/export UX) and
+Batch 5 (polish) are not started. Resume with Batch 4 below.
+
+What works right now, verified live end-to-end with Playwright against the
+real FastAPI backend (not just unit tests): open the app, click a block type
+in the left palette to add it to the canvas, drag it around (position snaps
+to the grid, matching `.flo`'s `cell_x`/`cell_y` units via
+`frontend/src/helpers/grid.js`'s 16px/cell), click it to select it, edit its
+fields in the right-hand inspector, see the change land in the shared
+`FlowStore`. Backend `/api/blocks`, `/api/flow/import`, `/api/flow/export`
+all work and were round-tripped against a real device-verified fixture
+(`tests/fixtures/android-auto-app-toggle.flo`, including its
+Delay↔CarModeEnabled loop).
+
+Not yet wired: dragging a connection between node ports (no `flow-port.js`/
+`edge-line.js`/`port-geometry.js` yet, so edges can only be set by directly
+calling `FlowStore.addEdge()`, not from the UI), and the toolbar
+(New/Open/Save) doesn't exist yet — `main.js` composes palette+canvas+
+inspector but has no way to trigger `/api/flow/import` or `/api/flow/export`
+from the browser yet.
+
+### Lessons from Batches 1-3, worth reading before starting Batch 4
+
+- **Local model**: use `ollama_chat/qwen2.5-coder:7b` only. The 14b model
+  was tried first and was too slow on this GPU (8GB VRAM, only half fits ->
+  ~2 tok/s -> blows past Aider's default 600s timeout on any real response)
+  and was removed (`ollama rm qwen2.5-coder:14b`). See the personal memory
+  entry `local_llm_model_size` for why.
+- **Pass long/code-heavy messages via `--message-file <path>`, never inline
+  `--message "..."`** — backticks in an inline message get interpreted by
+  the shell (command substitution), corrupting or dropping the whole
+  invocation silently.
+- **Edit format is flaky regardless of `--edit-format whole` vs `diff`**:
+  the model sometimes emits plain prose/code-blocks with a filename header
+  instead of the format's real markers, and Aider then applies nothing
+  (files stay empty, "No test suite found" in Vitest). When this happens,
+  just retry the identical request once or twice — it's non-deterministic,
+  not a real disagreement with the prompt. If it keeps failing 2+ times,
+  the model's response in the log is often still complete and correct
+  content (just wrongly formatted) — extract it from the aider output and
+  write the files directly rather than continuing to retry indefinitely.
+- **Recurring bug: stray root-level files.** The model repeatedly writes a
+  new *nested*-path file (e.g. `frontend/src/components/flow-node.js`) to
+  the *repo root* (`flow-node.js`) instead, even when the correct path was
+  given explicitly and even when it reports "Applied edit to
+  frontend/src/components/flow-node.js". After every batch of new files,
+  check the repo root for stray same-named files (`ls *.js` at repo root)
+  and `mv` them into place before running tests.
+- **Recurring test-authoring bugs to sanity-check for, every file:**
+  - Missing `import { describe, it, expect, ... } from "vitest"` (near
+    every generated test file had this) — causes "No test suite found" or
+    `ReferenceError`.
+  - jest-dom matchers used as if installed (`toHaveClass`,
+    `toHaveTextContent`, `toBeInTheDocument`) — this project doesn't have
+    `@testing-library/jest-dom`. Replace with plain assertions
+    (`.classList.contains(...)`, `.textContent`, `!== null`).
+  - `el.querySelector(...)` used where Lit renders into shadow DOM — needs
+    `el.shadowRoot.querySelector(...)`.
+  - A "fires an event" test reading `.detail` off `dispatchEvent()`'s
+    *return value* (a boolean) instead of registering a listener first.
+  - A mock (`vi.mock`/`mockResolvedValue`) configured *after* an element
+    that fetches on `connectedCallback` was already appended to the
+    document — the one-shot fetch already fired against the unconfigured
+    mock by then. Configure the mock, then append the element.
+  - `PointerEvent` isn't implemented in this project's jsdom version — use
+    `MouseEvent` with a manually-assigned `.pointerId` property in tests
+    (components here only ever read `clientX`/`clientY`/`pointerId` as
+    plain properties, so this is equivalent).
+- **Test environment must be `jsdom`, not `happy-dom`**: happy-dom silently
+  failed to re-render a Lit template with a nested conditional array (data
+  and render() logic were both confirmed correct via debug logging —
+  swapping to jsdom fixed it immediately, no code change needed). This is
+  already set in `frontend/vite.config.js`; don't change it back.
+- **Workflow that worked well**: write the aider prompt to a scratch file,
+  run one aider call per new file-pair (component + its test, or helper +
+  its test), then `uv run pytest` / `npx vitest run` immediately after each.
+  Fix small (~1-5 line) mechanical bugs directly rather than round-tripping
+  through aider again; send real logic bugs back to aider as a precise,
+  itemized bug report (see the git log for Batches 1 and 3 for examples of
+  that style) and only escalate to writing something substantial yourself
+  if aider fails repeatedly on the same file.
+- Before ending a work session, do a live Playwright smoke test (not just
+  unit tests) against both servers running together — several real bugs
+  (e.g. the app-shell CSS grid areas never being assigned, so the palette
+  rendered full-width instead of in its sidebar) only showed up that way,
+  not in unit tests. Pattern: `npx playwright install chromium` (no system
+  deps available on this Arch box, so skip `--with-deps`), launch chromium,
+  `page.goto("http://localhost:<vite-port>/")` (use `localhost`, not
+  `127.0.0.1` — vite only binds the IPv6 loopback here), use
+  `page.evaluate()` to poke at component internals directly (e.g.
+  `document.querySelector("app-shell").querySelector("flow-canvas").store`),
+  screenshot at the end. claude-in-chrome could NOT reach localhost servers
+  in this environment — use Playwright instead. Remember to revert
+  `frontend/vite.config.js`'s proxy port back to `8000` and kill the
+  smoke-test `uvicorn`/`vite` processes afterward.
+
 ## Stack decision (already made, do not re-litigate)
 
 - **Backend**: FastAPI + uvicorn, run via `uv run uvicorn automate_flo_gui.server:app`.
