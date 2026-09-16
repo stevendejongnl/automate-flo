@@ -21,39 +21,84 @@ from it.
 
 ## Progress (updated 2026-09-16)
 
-**Batches 1-3 are done and committed** (commits `1cddae5`, `7beb8c6`,
-`13c5796` on this branch). Batch 4 (connections + import/export UX) and
-Batch 5 (polish) are not started.
+**Batches 1-3.5 are done and committed and pushed** (`origin/gui`; commits
+`1cddae5`, `7beb8c6`, `13c5796`, `9e2812e`). **Batch 4 (connections +
+import/export UX) is next** — no more prerequisites, start there directly.
+Batch 5 (polish) is not started.
 
-**Before starting Batch 4: convert the whole frontend from JS to
-TypeScript first.** This was decided after Batch 3 landed (2026-09-16) and
-is a new prerequisite step, not yet done. Convert every existing file under
-`frontend/src/` (components, helpers, and their co-located tests) from
-`.js`/`.test.js` to `.ts`/`.test.ts`, update `frontend/package.json` (add
-`typescript`, a `tsc --noEmit` typecheck script) and `frontend/vite.config.js`
-/ `frontend/index.html` references accordingly, and get the full existing
-test suite green again on `.ts` before writing any Batch 4 code. Do this as
-its own batch (call it Batch 3.5), not folded into Batch 4.
+The whole frontend is TypeScript now (Batch 3.5, done 2026-09-16): every
+file under `frontend/src/` is `.ts`/`.test.ts`, `tsc --noEmit` and
+`npx vitest run` are both clean, `frontend/tsconfig.json` exists (strict
+mode), and `npm run typecheck` runs it. Keep tsc clean going forward —
+run it alongside vitest after every change in Batch 4/5, not just at the
+end of a batch.
 
 What works right now, verified live end-to-end with Playwright against the
 real FastAPI backend (not just unit tests): open the app, click a block type
 in the left palette to add it to the canvas, drag it around (position snaps
 to the grid, matching `.flo`'s `cell_x`/`cell_y` units via
-`frontend/src/helpers/grid.js`'s 16px/cell), click it to select it, edit its
+`frontend/src/helpers/grid.ts`'s 16px/cell), click it to select it, edit its
 fields in the right-hand inspector, see the change land in the shared
 `FlowStore`. Backend `/api/blocks`, `/api/flow/import`, `/api/flow/export`
 all work and were round-tripped against a real device-verified fixture
 (`tests/fixtures/android-auto-app-toggle.flo`, including its
 Delay↔CarModeEnabled loop).
 
-Not yet wired: dragging a connection between node ports (no `flow-port.js`/
-`edge-line.js`/`port-geometry.js` yet, so edges can only be set by directly
+Not yet wired: dragging a connection between node ports (no `flow-port.ts`/
+`edge-line.ts`/`port-geometry.ts` yet, so edges can only be set by directly
 calling `FlowStore.addEdge()`, not from the UI), and the toolbar
-(New/Open/Save) doesn't exist yet — `main.js` composes palette+canvas+
+(New/Open/Save) doesn't exist yet — `main.ts` composes palette+canvas+
 inspector but has no way to trigger `/api/flow/import` or `/api/flow/export`
 from the browser yet.
 
-### Lessons from Batches 1-3, worth reading before starting Batch 4
+### Lessons from Batches 1-3.5, worth reading before starting Batch 4
+
+- **TypeScript + this codebase's Lit pattern**: keep `static properties =
+  {...}` exactly as Lit needs it at runtime, and separately add `declare
+  propName: Type;` field declarations right below it for each one (compile-
+  time only, erased at runtime, doesn't fight Lit's own property system).
+  Don't use `@property`/`@customElement` decorators (no Babel/TS decorator
+  support in this Vite setup). See any component under `frontend/src/
+  components/` for the pattern, or `frontend/src/types.ts` for the shared
+  `GraphNode`/`GraphEdge`/`Graph`/`BlockSchema`/`BlockField` interfaces
+  every file should import rather than redefining.
+- **A class imported only for its TYPE gets silently elided.** If a test
+  file only ever uses `ComponentClass` in a type position (`let el:
+  ComponentClass`, `createEl<ComponentClass>(...)`) and never as a runtime
+  value, esbuild's per-file transpilation drops the import entirely —
+  including the module's `customElements.define(...)` side effect, so
+  `document.createElement(tag)` silently returns a plain unregistered
+  `HTMLElement` and tests fail with a null `shadowRoot`. Always split into
+  a bare side-effect import plus a separate `import type`:
+  `import "./foo.js"; import type { Foo } from "./foo.js";`. Use
+  `frontend/src/helpers/test-utils.ts`'s `createEl<T>(tag)` in every
+  component test instead of raw `document.createElement`.
+- **Property names can collide with built-in DOM properties.** `nodeType`
+  (used for a block's type name on `flow-node`) collided with the
+  read-only `Node.nodeType` — TypeScript's strict mode caught this as a
+  real bug, not just noise; it's now `blockType`. Watch for this with any
+  new reactive property name that overlaps a `Node`/`Element`/`HTMLElement`
+  built-in (`id`, `title`, `hidden`, `style`, `className`, etc. are also
+  real DOM properties — pick names that don't collide).
+- **`git diff --stat` after every aider run, before trusting "Applied edit
+  to ..." in its log.** At least once aider claimed to apply an edit to
+  both files in a whole-format response, right before its
+  "Summarization failed ... cannot schedule new futures after shutdown"
+  error, and wrote nothing to disk. The correct content was still visible
+  in its own chat transcript output and could be transcribed by hand.
+- **Diff whole-file rewrites for content loss, not just new type errors.**
+  A "whole" edit format response once silently dropped an entire
+  `static styles` CSS block with no other symptom — tests didn't catch it
+  (jsdom doesn't check computed styles), only reading the diff did.
+- **A "helpful" rewrite can reintroduce an already-fixed bug.** One pass
+  moved `document.body.appendChild(el)` into `beforeEach`, ahead of each
+  test's `fetchBlockSchemas` mock setup, deleting the comment that
+  explained why it was deliberately NOT there — reintroducing the exact
+  ordering bug fixed once already during Batch 3 (component's one-shot
+  fetch firing against an unconfigured mock). Read every generated test
+  diff against what it's replacing, not just against whether it compiles.
+
+### Lessons from Batches 1-3, still relevant for Batch 4
 
 - **Local model**: use `ollama_chat/qwen2.5-coder:7b` only. The 14b model
   was tried first and was too slow on this GPU (8GB VRAM, only half fits ->
@@ -362,29 +407,34 @@ pytest` before moving to the next.
   Batch 4 — don't let type errors pile up to fix "later".
 
 ### Batch 4 — connections + import/export
-- `frontend/src/helpers/port-geometry.js`: given a node's position/type,
+
+Write these directly as `.ts`/`.test.ts` (the codebase is TypeScript now —
+see Batch 3.5 above and its lessons for the `declare`-field Lit pattern,
+the type-only-import elision gotcha, and `src/types.ts`'s shared shapes).
+
+- `frontend/src/helpers/port-geometry.ts`: given a node's position/type,
   compute pixel anchor points for its output port(s) (one for
   Action-category `complete`, two for Decision-category `positive`/
   `negative`) and for a target node's input side — pure functions, no DOM.
-- `frontend/src/components/flow-port.js`: one small draggable handle element,
-  used by `flow-node.js` (one instance per output the node has). Dragging
-  from it to another node's body fires an event; `flow-canvas.js` turns that
-  into a `flow-store.js` edge update (replacing any existing edge from that
+- `frontend/src/components/flow-port.ts`: one small draggable handle element,
+  used by `flow-node.ts` (one instance per output the node has). Dragging
+  from it to another node's body fires an event; `flow-canvas.ts` turns that
+  into a `flow-store.ts` edge update (replacing any existing edge from that
   same `(from, kind)` first — an output points to only one target, matching
   the data model).
-- `frontend/src/components/edge-line.js`: renders one edge as an SVG line/
-  bezier between two pixel points (from `port-geometry.js`). `flow-canvas.js`
+- `frontend/src/components/edge-line.ts`: renders one edge as an SVG line/
+  bezier between two pixel points (from `port-geometry.ts`). `flow-canvas.ts`
   renders one `edge-line` per store edge inside an SVG overlay — it doesn't
   compute geometry itself.
-- `frontend/src/components/app-toolbar.js`: **New** (clear store), **Open**
-  (file input, calls `api-client.js`'s `importFlow`, replaces store
+- `frontend/src/components/app-toolbar.ts`: **New** (clear store), **Open**
+  (file input, calls `api-client.ts`'s `importFlow`, replaces store
   contents), **Save** (builds Graph JSON from the store, calls
   `exportFlow`, triggers a browser download of the returned bytes as
   `flow.flo`) — three small buttons, no import/export logic of its own
-  beyond calling `api-client.js` and the store.
+  beyond calling `api-client.ts` and the store.
 - Delete selected node (keyboard `Delete`/`Backspace` while a node is
-  selected, handled in `flow-canvas.js` or `app-shell.js`) — removes the
-  node and any edges touching it via `flow-store.js`.
+  selected, handled in `flow-canvas.ts` or `app-shell.ts`) — removes the
+  node and any edges touching it via `flow-store.ts`.
 
 ### Batch 5 — polish
 - Highlight required-but-empty fields in the inspector in red; block Save
@@ -400,11 +450,26 @@ the GUI itself works, not part of this batch list.
 
 ## Running Aider against the local model
 
+Use 7b, not 14b (see the "Local model" lesson above), pass the prompt via
+`--message-file` (never inline `--message "..."` — backticks in TS/Lit code
+break shell quoting), and one file-pair (component/helper + its test) per
+call:
+
 ```bash
 cd ~/workspace/automate-flo-gui
 export OLLAMA_API_BASE=http://127.0.0.1:11434
-~/.local/bin/aider --model ollama_chat/qwen2.5-coder:14b --yes-always --no-auto-commits --no-stream --no-check-update
+~/.local/bin/aider --model ollama_chat/qwen2.5-coder:7b --edit-format whole \
+  --yes-always --no-auto-commits --no-stream --no-check-update --timeout 1200 \
+  frontend/src/components/foo.ts frontend/src/components/foo.test.ts \
+  --read frontend/src/types.ts --read frontend/src/components/<a-similar-already-done-file>.ts \
+  --message-file /path/to/scratch/prompt.txt
 ```
+
+`--edit-format whole` was more reliable than `diff` for this model in
+practice during Batch 3.5, though either can silently fail to apply (see
+the "flaky format" and "aider claims Applied edit but writes nothing"
+lessons above) — retry once, and always `git diff --stat` afterward before
+trusting the log.
 
 (`--no-auto-commits`: review each batch's diff before committing by hand —
 this is a much bigger change than the small watch-GUI fixes this pattern was
