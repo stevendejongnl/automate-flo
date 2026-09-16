@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import './palette-item.js';
+import type { PaletteItem } from './palette-item.js';
+import { createEl } from '../helpers/test-utils.js';
 
 describe('PaletteItem', () => {
-  let el;
+  let el: PaletteItem;
 
   beforeEach(() => {
-    el = document.createElement('palette-item');
+    el = createEl<PaletteItem>('palette-item');
     document.body.appendChild(el);
   });
 
@@ -17,8 +19,8 @@ describe('PaletteItem', () => {
     el.typeName = 'Delay';
     el.docSummary = 'Waits N seconds';
     await el.updateComplete;
-    expect(el.shadowRoot.textContent).toContain('Delay');
-    expect(el.shadowRoot.textContent).toContain('Waits N seconds');
+    expect(el.shadowRoot!.textContent).toContain('Delay');
+    expect(el.shadowRoot!.textContent).toContain('Waits N seconds');
   });
 
   it('dispatches palette-item-selected event on click', async () => {
@@ -26,7 +28,7 @@ describe('PaletteItem', () => {
     await el.updateComplete;
     const handler = vi.fn();
     el.addEventListener('palette-item-selected', handler);
-    el.shadowRoot.querySelector('.item').click();
+    el.shadowRoot!.querySelector<HTMLElement>('.item')!.click();
     await el.updateComplete;
     expect(handler).toHaveBeenCalledWith(expect.any(CustomEvent));
     expect(handler.mock.calls[0][0].detail.typeName).toBe('Delay');

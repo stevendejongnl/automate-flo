@@ -1,11 +1,16 @@
 import { LitElement, html, css } from "lit";
+import type { FieldKind } from "../types.js";
 
-class InspectorField extends LitElement {
+export class InspectorField extends LitElement {
   static properties = {
     fieldName: { type: String },
     fieldKind: { type: String },
     value: { type: Object },
   };
+
+  declare fieldName: string;
+  declare fieldKind: FieldKind;
+  declare value: unknown;
 
   static styles = css`
     :host { display: block; margin-bottom: 8px; }
@@ -31,14 +36,15 @@ class InspectorField extends LitElement {
     }
   }
 
-  _onChange(event) {
-    let newValue;
+  _onChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    let newValue: boolean | number | string;
     if (this.fieldKind === "boolean") {
-      newValue = event.target.checked;
+      newValue = target.checked;
     } else if (this.fieldKind === "number") {
-      newValue = event.target.valueAsNumber;
+      newValue = target.valueAsNumber;
     } else {
-      newValue = event.target.value;
+      newValue = target.value;
     }
     this.dispatchEvent(new CustomEvent("field-changed", {
       detail: { fieldName: this.fieldName, value: newValue },

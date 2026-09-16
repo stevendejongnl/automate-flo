@@ -1,10 +1,13 @@
 import { LitElement, html, css } from 'lit';
 
-class PaletteItem extends LitElement {
+export class PaletteItem extends LitElement {
   static properties = {
     typeName: { type: String, reflect: true },
     docSummary: { type: String, reflect: true },
   };
+
+  declare typeName: string;
+  declare docSummary: string;
 
   static styles = css`
     .item {

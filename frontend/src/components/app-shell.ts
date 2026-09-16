@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 
-class AppShell extends LitElement {
+export class AppShell extends LitElement {
   static styles = css`
     :host {
       display: grid;

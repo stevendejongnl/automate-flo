@@ -1,4 +1,6 @@
-export async function fetchBlockSchemas() {
+import type { BlockSchema, Graph } from "../types.js";
+
+export async function fetchBlockSchemas(): Promise<BlockSchema[]> {
     const response = await fetch("/api/blocks");
     if (!response.ok) {
         throw new Error(`fetchBlockSchemas failed: ${response.status}`);
@@ -6,7 +8,7 @@ export async function fetchBlockSchemas() {
     return await response.json();
 }
 
-export async function importFlow(bytes) {
+export async function importFlow(bytes: ArrayBuffer): Promise<Graph> {
     const response = await fetch("/api/flow/import", {
         method: "POST",
         headers: {
@@ -20,7 +22,7 @@ export async function importFlow(bytes) {
     return await response.json();
 }
 
-export async function exportFlow(graph) {
+export async function exportFlow(graph: Graph): Promise<ArrayBuffer> {
     const response = await fetch("/api/flow/export", {
         method: "POST",
         headers: {

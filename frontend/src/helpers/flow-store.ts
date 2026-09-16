@@ -1,4 +1,12 @@
+import type { GraphNode, GraphEdge, EdgeKind, Graph } from "../types.js";
+
 export class FlowStore {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  selectedNodeId: string | null;
+  private _listeners: Array<() => void>;
+  _nextNodeNum: number;
+
   constructor() {
     this.nodes = [];
     this.edges = [];
@@ -7,30 +15,30 @@ export class FlowStore {
     this._nextNodeNum = 1;
   }
 
-  onChange(callback) {
+  onChange(callback: () => void): () => void {
     this._listeners.push(callback);
     return () => {
       this._listeners = this._listeners.filter(cb => cb !== callback);
     };
   }
 
-  _notify() {
+  private _notify(): void {
     this._listeners.forEach(listener => listener());
   }
 
-  addNode(type, x, y, fields = {}) {
+  addNode(type: string, x: number, y: number, fields?: Record<string, unknown>): string {
     const id = this._genNodeId();
-    const node = { id, type, x, y, fields };
+    const node: GraphNode = { id, type, x, y, fields: fields || {} };
     this.nodes.push(node);
     this._notify();
     return id;
   }
 
-  _genNodeId() {
+  private _genNodeId(): string {
     return `n${this._nextNodeNum++}`;
   }
 
-  moveNode(id, x, y) {
+  moveNode(id: string, x: number, y: number): void {
     const node = this.nodes.find(n => n.id === id);
     if (node) {
       node.x = x;
@@ -39,7 +47,7 @@ export class FlowStore {
     }
   }
 
-  updateNodeFields(id, fields) {
+  updateNodeFields(id: string, fields: Record<string, unknown>): void {
     const node = this.nodes.find(n => n.id === id);
     if (node) {
       Object.assign(node.fields, fields);
@@ -47,7 +55,7 @@ export class FlowStore {
     }
   }
 
-  removeNode(id) {
+  removeNode(id: string): void {
     const index = this.nodes.findIndex(n => n.id === id);
     if (index !== -1) {
       this.nodes.splice(index, 1);
@@ -59,32 +67,32 @@ export class FlowStore {
     }
   }
 
-  selectNode(id) {
+  selectNode(id: string | null): void {
     this.selectedNodeId = id;
     this._notify();
   }
 
-  addEdge(from, to, kind) {
+  addEdge(from: string, to: string, kind: EdgeKind): void {
     this.edges = this.edges.filter(e => !(e.from === from && e.kind === kind));
     this.edges.push({ from, to, kind });
     this._notify();
   }
 
-  removeEdge(from, kind) {
+  removeEdge(from: string, kind: EdgeKind): void {
     this.edges = this.edges.filter(e => !(e.from === from && e.kind === kind));
     this._notify();
   }
 
-  loadGraph(graph) {
-    this.nodes = graph?.nodes || [];
-    this.edges = graph?.edges || [];
+  loadGraph(graph: Graph): void {
+    this.nodes = graph.nodes;
+    this.edges = graph.edges;
     this.selectedNodeId = null;
     const maxId = Math.max(0, ...this.nodes.map(n => parseInt(n.id.slice(1), 10) || 0));
     this._nextNodeNum = maxId + 1;
     this._notify();
   }
 
-  toGraph() {
+  toGraph(): Graph {
     return {
       next_id: this.nodes.length,
       nodes: this.nodes,

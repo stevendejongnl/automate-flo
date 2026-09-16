@@ -1,8 +1,9 @@
 import { LitElement, html, css } from "lit";
 import { cellToPixel, pixelToCell } from "../helpers/grid.js";
 import "./flow-node.js";
+import { FlowStore } from "../helpers/flow-store.js";
 
-class FlowCanvas extends LitElement {
+export class FlowCanvas extends LitElement {
   static properties = {
     store: { type: Object, attribute: false },
   };
@@ -21,19 +22,17 @@ class FlowCanvas extends LitElement {
     }
   `;
 
-  constructor() {
-    super();
-    this._unsubscribe = null;
-  }
+  declare store: FlowStore;
+  private _unsubscribe: (() => void) | null = null;
 
-  connectedCallback() {
+  connectedCallback(): void {
     super.connectedCallback();
     if (this.store) {
       this._unsubscribe = this.store.onChange(() => this.requestUpdate());
     }
   }
 
-  disconnectedCallback() {
+  disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this._unsubscribe) {
       this._unsubscribe();
@@ -47,7 +46,7 @@ class FlowCanvas extends LitElement {
         ${this.store.nodes.map(node => html`
           <flow-node
             .nodeId=${node.id}
-            .nodeType=${node.type}
+            .blockType=${node.type}
             .x=${cellToPixel(node.x)}
             .y=${cellToPixel(node.y)}
             .selected=${node.id === this.store.selectedNodeId}
@@ -59,16 +58,16 @@ class FlowCanvas extends LitElement {
     `;
   }
 
-  _onNodeSelected(event) {
+  _onNodeSelected(event: CustomEvent<{ nodeId: string }>): void {
     this.store.selectNode(event.detail.nodeId);
   }
 
-  _onNodeMoved(event) {
+  _onNodeMoved(event: CustomEvent<{ nodeId: string; x: number; y: number }>): void {
     const { nodeId, x, y } = event.detail;
     this.store.moveNode(nodeId, pixelToCell(x), pixelToCell(y));
   }
 
-  _onCanvasClick() {
+  _onCanvasClick(): void {
     this.store.selectNode(null);
   }
 }
