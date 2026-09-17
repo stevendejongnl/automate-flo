@@ -84,6 +84,7 @@ from .bluetooth_device_scan import BluetoothDeviceScan
 from .bluetooth_enabled import BluetoothEnabled
 from .bluetooth_gatt_read import BluetoothGattRead
 from .bluetooth_set_state import BluetoothSetState
+from .broadcast_receive import BroadcastReceive
 from .car_mode_enabled import CarModeEnabled
 from .clipboard_get import ClipboardGet
 from .clipboard_set import ClipboardSet
@@ -176,6 +177,7 @@ ALL_BLOCKS = [
     BluetoothEnabled,
     BluetoothGattRead,
     BluetoothSetState,
+    BroadcastReceive,
     CarModeEnabled,
     ClipboardGet,
     ClipboardSet,
