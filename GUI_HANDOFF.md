@@ -87,15 +87,18 @@ dispatch.
   `api-client.ts` now surfaces the backend's actual `detail` string instead
   of just the HTTP status, and `app-toolbar.ts` shows it inline.
 
-**Real gap found, not yet fixed**: nothing in the GUI models or enforces
-`FlowBeginning` (`automate_flo/blocks/flow_beginning.py`) as the mandatory
-entry point every real Automate flow has. `introspect.py` categorizes it as
-a plain `"action"` block with no special palette treatment, and
-`graph.py`'s `graph_to_blocks` picks export roots purely by topology (any
-node with no incoming edge) — so the GUI happily exports a `.flo` with zero,
-multiple, or disconnected `FlowBeginning`s and never warns. Worth a
-follow-up: either surface `FlowBeginning` specially in the palette, or
-validate on export that exactly one exists and is the sole root.
+**Fixed** (`aa7a547`): `FlowBeginning` (`automate_flo/blocks/flow_beginning.py`
+— "the entry point of every flow") is now modeled specially. Backend:
+`introspect.py`'s `build_block_schemas()` adds `is_entry_point` to every
+schema (true only for `FlowBeginning`); `graph.py`'s `graph_to_blocks`
+validates a non-empty graph has exactly one root and that root is a
+`FlowBeginning`, raising `ValueError` otherwise — surfaced inline through
+the Open/Save error-detail plumbing above, no separate wiring needed.
+Frontend: `block-palette.ts` renders entry-point blocks in their own
+`"start"` section above `action`/`decision`. Verified live: palette shows
+`FlowBeginning` under `start`, and exporting a `Delay`-only graph shows
+`"exportFlow failed: flow must start with a FlowBeginning block, not Delay"`
+inline.
 
 **Other flaws noticed during this audit, not yet fixed**:
 - No way to delete an existing edge/connection once created — only creation
