@@ -24,6 +24,10 @@ export class FlowCanvas extends LitElement {
       position: relative;
       width: 100%;
       height: 100%;
+      background-image:
+        linear-gradient(to right, #e5e7eb 1px, transparent 1px),
+        linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+      background-size: 16px 16px; /* keep in sync with CELL_SIZE_PX in helpers/grid.ts */
     }
     .edges {
       position: absolute;

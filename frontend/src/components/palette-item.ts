@@ -16,15 +16,21 @@ export class PaletteItem extends LitElement {
       border: 1px solid #ccc;
       border-radius: 4px;
       margin: 4px;
+      box-sizing: border-box;
+      max-width: 100%;
     }
     .name {
       font-weight: bold;
       font-size: 16px;
       color: #333;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
     .doc {
       font-size: 14px;
       color: #666;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
   `;
 

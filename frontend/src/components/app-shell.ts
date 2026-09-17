@@ -12,9 +12,9 @@ export class AppShell extends LitElement {
       height: 100vh;
     }
     .toolbar { grid-area: toolbar; }
-    .palette { grid-area: palette; overflow-y: auto; }
+    .palette { grid-area: palette; overflow-y: auto; overflow-x: hidden; min-width: 0; }
     .canvas { grid-area: canvas; overflow: auto; }
-    .inspector { grid-area: inspector; overflow-y: auto; }
+    .inspector { grid-area: inspector; overflow-y: auto; overflow-x: hidden; min-width: 0; }
   `;
 
   render() {
