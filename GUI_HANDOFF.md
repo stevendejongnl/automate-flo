@@ -56,6 +56,56 @@ also now serves the built frontend directly (`npm run build`, then a single
 `uv run uvicorn automate_flo_gui.server:app` serves everything, no separate
 dev server needed) — see the README's new "GUI" section.
 
+### Post-Batch-5 fixes (2026-09-17) — real bugs jsdom unit tests couldn't see
+
+Two connection-drag bugs were found by driving the actual built app in a real
+Chrome browser (via the claude-in-chrome extension) instead of just running
+the unit test suite — both were invisible to `npx vitest run` because the
+mocks happened to paper over the exact thing that was broken. Both are fixed
+and committed (`2f5207b`), verified via a genuine mouse `left_click_drag` in
+the real browser producing a visible connector line, not synthetic event
+dispatch.
+
+- **Connections could never be created by dragging in a real browser.**
+  `flow-port.ts`'s drop handler used `document.elementFromPoint()`, which
+  only pierces one level of shadow DOM. Since `flow-canvas` and each
+  `flow-node` each have their own shadow root, a drop over a node's card
+  always resolved back to `<flow-canvas>` itself, never the actual node.
+  Unit tests mocked `elementFromPoint` to return the right element directly,
+  so this never showed up there. Fixed with a recursive
+  `deepElementFromPoint` helper that descends through nested shadow roots.
+- **Even once created, connections never rendered.** `flow-canvas.ts` drew
+  each edge via a custom `<edge-line>` element wrapping an SVG `<line>`.
+  A custom element is HTML-namespaced regardless of what it renders
+  internally, and every ancestor between an `<svg>` and a graphics element
+  must itself be SVG-namespaced — so the `<line>` never entered the SVG
+  layout tree (`getBoundingClientRect()`/`getBBox()` both all-zero).
+  Fixed by having `flow-canvas.ts` render each `<line>` directly via Lit's
+  `svg` tagged template; `edge-line.ts`/`edge-line.test.ts` were deleted.
+- Also fixed separately: Open/Save silently did nothing on failure (e.g. a
+  `.flo` file containing a block type this library doesn't implement yet).
+  `api-client.ts` now surfaces the backend's actual `detail` string instead
+  of just the HTTP status, and `app-toolbar.ts` shows it inline.
+
+**Real gap found, not yet fixed**: nothing in the GUI models or enforces
+`FlowBeginning` (`automate_flo/blocks/flow_beginning.py`) as the mandatory
+entry point every real Automate flow has. `introspect.py` categorizes it as
+a plain `"action"` block with no special palette treatment, and
+`graph.py`'s `graph_to_blocks` picks export roots purely by topology (any
+node with no incoming edge) — so the GUI happily exports a `.flo` with zero,
+multiple, or disconnected `FlowBeginning`s and never warns. Worth a
+follow-up: either surface `FlowBeginning` specially in the palette, or
+validate on export that exactly one exists and is the sole root.
+
+**Other flaws noticed during this audit, not yet fixed**:
+- No way to delete an existing edge/connection once created — only creation
+  is wired up (`flow-port.ts` / `flow-canvas.ts`'s `_onNodeConnected`).
+- New nodes spawn stacked directly adjacent with zero gap, making individual
+  ports hard to grab — worth spawning with an offset or auto-layout nudge.
+- Canvas has no zoom/pan; not yet confirmed whether that's a real gap for
+  larger flows or a non-issue at typical flow sizes.
+- No multi-select (single `selectedNodeId` only, in `flow-store.ts`).
+
 ### What's genuinely not done
 
 - **Docker/k8s manifests** — explicitly deferred from the start (see the
