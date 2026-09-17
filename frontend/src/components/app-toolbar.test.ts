@@ -79,7 +79,7 @@ describe("AppToolbar", () => {
 
   it("clicking 'Save' triggers a download when all required fields are filled", async () => {
     mockGetBlockSchemas.mockResolvedValue([
-      { type_name: "Delay", type_id: 1046, category: "action", doc_summary: "Waits", fields: [{ name: "seconds", required: true, default: null, kind: "number" }] }
+      { type_name: "Delay", type_id: 1046, category: "action", is_entry_point: false, doc_summary: "Waits", fields: [{ name: "seconds", required: true, default: null, kind: "number" }] }
     ]);
     document.body.appendChild(el);
     await el.updateComplete;
@@ -97,7 +97,7 @@ describe("AppToolbar", () => {
 
   it("blocks 'Save' and shows an inline message when a required field is empty", async () => {
     mockGetBlockSchemas.mockResolvedValue([
-      { type_name: "Delay", type_id: 1046, category: "action", doc_summary: "Waits", fields: [{ name: "seconds", required: true, default: null, kind: "number" }] }
+      { type_name: "Delay", type_id: 1046, category: "action", is_entry_point: false, doc_summary: "Waits", fields: [{ name: "seconds", required: true, default: null, kind: "number" }] }
     ]);
     document.body.appendChild(el);
     await el.updateComplete;

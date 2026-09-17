@@ -35,6 +35,7 @@ export interface BlockSchema {
   type_name: string;
   type_id: number;
   category: BlockCategory;
+  is_entry_point: boolean;
   doc_summary: string;
   fields: BlockField[];
 }

@@ -14,3 +14,48 @@ def test_graph_to_blocks_and_blocks_to_graph():
     new_g = blocks_to_graph(new_parsed)
     
     assert g == new_g
+
+def test_graph_to_blocks_rejects_no_flow_beginning():
+    g = {
+        "next_id": 2,
+        "nodes": [
+            {
+                "id": "n1",
+                "type": "AppKill",
+                "x": 0,
+                "y": 0,
+                "fields": {"package_name": "com.example"}
+            }
+        ],
+        "edges": []
+    }
+    with pytest.raises(ValueError):
+        graph_to_blocks(g)
+
+def test_graph_to_blocks_rejects_multiple_roots():
+    g = {
+        "next_id": 3,
+        "nodes": [
+            {
+                "id": "n1",
+                "type": "FlowBeginning",
+                "x": 0,
+                "y": 0,
+                "fields": {
+                    "title": "",
+                    "hidden": False,
+                    "parallel": False
+                }
+            },
+            {
+                "id": "n2",
+                "type": "AppKill",
+                "x": 0,
+                "y": 0,
+                "fields": {"package_name": "com.example"}
+            }
+        ],
+        "edges": []
+    }
+    with pytest.raises(ValueError):
+        graph_to_blocks(g)

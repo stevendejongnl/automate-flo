@@ -24,6 +24,7 @@ def build_block_schemas():
             "type_name": cls.__name__,
             "type_id": cls.type_id,
             "category": category,
+            "is_entry_point": cls.__name__ == "FlowBeginning",
             "doc_summary": doc_summary,
             "fields": fields
         })

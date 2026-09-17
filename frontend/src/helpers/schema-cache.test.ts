@@ -14,7 +14,7 @@ describe("schema-cache", () => {
 
   it("fetches schemas on first call", async () => {
     mockFetchBlockSchemas.mockResolvedValue([
-      { type_name: "Delay", type_id: 1046, category: "action", doc_summary: "Waits", fields: [] }
+      { type_name: "Delay", type_id: 1046, category: "action", is_entry_point: false, doc_summary: "Waits", fields: [] }
     ]);
     const schemas = await getBlockSchemas();
     expect(schemas).toHaveLength(1);
@@ -23,7 +23,7 @@ describe("schema-cache", () => {
 
   it("does not re-fetch on subsequent calls", async () => {
     mockFetchBlockSchemas.mockResolvedValue([
-      { type_name: "Delay", type_id: 1046, category: "action", doc_summary: "Waits", fields: [] }
+      { type_name: "Delay", type_id: 1046, category: "action", is_entry_point: false, doc_summary: "Waits", fields: [] }
     ]);
     await getBlockSchemas();
     await getBlockSchemas();

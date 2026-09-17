@@ -48,7 +48,7 @@ describe("NodeInspector", () => {
 
   it("renders inspector fields when a node is selected and schema is available", async () => {
     mockFetchBlockSchemas.mockResolvedValue([
-      { type_name: "Delay", type_id: 1046, category: "action", doc_summary: "Waits", fields: [{ name: "seconds", required: true, default: null, kind: "number" }] }
+      { type_name: "Delay", type_id: 1046, category: "action", is_entry_point: false, doc_summary: "Waits", fields: [{ name: "seconds", required: true, default: null, kind: "number" }] }
     ]);
     store.nodes = [{ id: "n1", type: "Delay", x: 0, y: 0, fields: { seconds: 5 } }];
     store.selectNode("n1");
@@ -64,7 +64,7 @@ describe("NodeInspector", () => {
 
   it("updates store when a field is changed", async () => {
     mockFetchBlockSchemas.mockResolvedValue([
-      { type_name: "Delay", type_id: 1046, category: "action", doc_summary: "Waits", fields: [{ name: "seconds", required: true, default: null, kind: "number" }] }
+      { type_name: "Delay", type_id: 1046, category: "action", is_entry_point: false, doc_summary: "Waits", fields: [{ name: "seconds", required: true, default: null, kind: "number" }] }
     ]);
     store.nodes = [{ id: "n1", type: "Delay", x: 0, y: 0, fields: { seconds: 5 } }];
     store.selectNode("n1");

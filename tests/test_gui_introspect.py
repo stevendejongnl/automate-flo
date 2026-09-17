@@ -22,5 +22,12 @@ class TestGuiIntrospect(unittest.TestCase):
         self.assertEqual(hidden_field["default"], False)
         self.assertEqual(hidden_field["kind"], "boolean")
 
+        # New test for is_entry_point field
+        flow_beginning_schema = next(schema for schema in schemas if schema["type_name"] == "FlowBeginning")
+        self.assertTrue(flow_beginning_schema["is_entry_point"])
+
+        app_kill_schema = next(schema for schema in schemas if schema["type_name"] == "AppKill")
+        self.assertFalse(app_kill_schema["is_entry_point"])
+
 if __name__ == '__main__':
     unittest.main()

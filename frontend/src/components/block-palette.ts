@@ -41,9 +41,13 @@ export class BlockPalette extends LitElement {
     );
   }
 
-  get _groupedSchemas(): Record<BlockCategory, BlockSchema[]> {
-    const grouped: Record<BlockCategory, BlockSchema[]> = { action: [], decision: [] };
+  get _groupedSchemas(): Record<"start" | BlockCategory, BlockSchema[]> {
+    const grouped: Record<"start" | BlockCategory, BlockSchema[]> = { start: [], action: [], decision: [] };
     for (const schema of this._filteredSchemas) {
+      if (schema.is_entry_point) {
+        grouped.start.push(schema);
+        continue;
+      }
       if (schema.category === "action") {
         grouped.action.push(schema);
       } else if (schema.category === "decision") {
@@ -57,7 +61,7 @@ export class BlockPalette extends LitElement {
     return html`
       <input type="search" .value=${this._query} @input=${(e: Event) => { this._query = (e.target as HTMLInputElement).value; }} />
       ${this._error ? html`<p class="error">${this._error}</p>` : null}
-      ${(["action", "decision"] as BlockCategory[]).map((category: BlockCategory) => {
+      ${(["start", "action", "decision"] as ("start" | BlockCategory)[]).map((category: "start" | BlockCategory) => {
         if (this._groupedSchemas[category].length > 0) {
           return html`
             <h3>${category}</h3>

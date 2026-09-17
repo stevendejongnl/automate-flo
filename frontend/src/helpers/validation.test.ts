@@ -7,6 +7,7 @@ const schemas: BlockSchema[] = [
     type_name: "Delay",
     type_id: 1046,
     category: "action",
+    is_entry_point: false,
     doc_summary: "Waits",
     fields: [
       { name: "seconds", required: true, default: null, kind: "number" },

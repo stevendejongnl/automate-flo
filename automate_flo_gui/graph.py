@@ -32,6 +32,12 @@ def graph_to_blocks(graph):
     referenced_ids = {edge["to"] for edge in edges}
     roots = [block for node, block in zip(nodes, blocks) if node["id"] not in referenced_ids]
 
+    if nodes:
+        if len(roots) != 1:
+            raise ValueError(f"flow must have exactly one entry point with no incoming connections, found {len(roots)}")
+        if roots[0].__class__.__name__ != "FlowBeginning":
+            raise ValueError(f"flow must start with a FlowBeginning block, not {roots[0].__class__.__name__}")
+
     return roots, len(nodes)
 
 def blocks_to_graph(parsed):
