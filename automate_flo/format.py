@@ -167,6 +167,9 @@ reverse-engineering notes):
   1029  CallState            automate_flo/blocks/call_state.py
   1031  CaptureImage         automate_flo/blocks/capture_image.py
   1030  CellSignalLevel      automate_flo/blocks/cell_signal_level.py
+  1034  ComposeEmail         automate_flo/blocks/compose_email.py
+  1035  ComposeMms           automate_flo/blocks/compose_mms.py
+  1036  ComposeSms           automate_flo/blocks/compose_sms.py
   106   StringExpr (W)       automate_flo/base.py -- string literal expression wrapper
   104   DoubleExpr (J)       automate_flo/base.py -- double literal expression wrapper,
         plain 8-byte BE double, no length prefix (e.g. Delay's "duration")

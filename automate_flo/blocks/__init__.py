@@ -97,6 +97,9 @@ from .car_mode_enabled import CarModeEnabled
 from .cell_signal_level import CellSignalLevel
 from .clipboard_get import ClipboardGet
 from .clipboard_set import ClipboardSet
+from .compose_email import ComposeEmail
+from .compose_mms import ComposeMms
+from .compose_sms import ComposeSms
 from .delay import Delay
 from .device_keep_awake import DeviceKeepAwake
 from .expression_decision import ExpressionDecision
@@ -199,6 +202,9 @@ ALL_BLOCKS = [
     CellSignalLevel,
     ClipboardGet,
     ClipboardSet,
+    ComposeEmail,
+    ComposeMms,
+    ComposeSms,
     Delay,
     DeviceKeepAwake,
     ExpressionDecision,
