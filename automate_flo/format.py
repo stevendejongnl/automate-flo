@@ -158,6 +158,7 @@ reverse-engineering notes):
   1277  BluetoothDeviceScan  automate_flo/blocks/bluetooth_device_scan.py
   1372  BluetoothGattRead    automate_flo/blocks/bluetooth_gatt_read.py
   1022  BroadcastReceive     automate_flo/blocks/broadcast_receive.py
+  1023  BroadcastSend        automate_flo/blocks/broadcast_send.py
   106   StringExpr (W)       automate_flo/base.py -- string literal expression wrapper
   104   DoubleExpr (J)       automate_flo/base.py -- double literal expression wrapper,
         plain 8-byte BE double, no length prefix (e.g. Delay's "duration")
