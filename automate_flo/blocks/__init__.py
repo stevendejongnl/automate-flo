@@ -92,7 +92,9 @@ from .call_incoming import CallIncoming
 from .call_number import CallNumber
 from .call_outgoing import CallOutgoing
 from .call_state import CallState
+from .capture_image import CaptureImage
 from .car_mode_enabled import CarModeEnabled
+from .cell_signal_level import CellSignalLevel
 from .clipboard_get import ClipboardGet
 from .clipboard_set import ClipboardSet
 from .delay import Delay
@@ -192,7 +194,9 @@ ALL_BLOCKS = [
     CallNumber,
     CallOutgoing,
     CallState,
+    CaptureImage,
     CarModeEnabled,
+    CellSignalLevel,
     ClipboardGet,
     ClipboardSet,
     Delay,
