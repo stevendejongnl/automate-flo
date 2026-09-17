@@ -100,14 +100,31 @@ from .clipboard_set import ClipboardSet
 from .compose_email import ComposeEmail
 from .compose_mms import ComposeMms
 from .compose_sms import ComposeSms
+from .contact_pick import ContactPick
+from .contact_query import ContactQuery
+from .content_pick import ContentPick
+from .content_read import ContentRead
+from .content_shared import ContentShared
+from .content_view import ContentView
+from .date_pick import DatePick
 from .delay import Delay
+from .device_docked import DeviceDocked
 from .device_keep_awake import DeviceKeepAwake
+from .device_lock import DeviceLock
+from .device_orientation import DeviceOrientation
+from .device_unlocked import DeviceUnlocked
+from .dial_number import DialNumber
+from .dialog_choice import DialogChoice
+from .dialog_confirm import DialogConfirm
+from .dialog_input import DialogInput
 from .expression_decision import ExpressionDecision
 from .flow_beginning import FlowBeginning
 from .http_request import HttpRequest
 from .label import Label
 from .log_append import LogAppend
 from .notification_show import NotificationShow
+from .ringtone_get import RingtoneGet
+from .ringtone_set import RingtoneSet
 from .screen_brightness import ScreenBrightness
 from .screen_brightness_set import ScreenBrightnessSet
 from .sms_send import SmsSend
@@ -205,14 +222,31 @@ ALL_BLOCKS = [
     ComposeEmail,
     ComposeMms,
     ComposeSms,
+    ContactPick,
+    ContactQuery,
+    ContentPick,
+    ContentRead,
+    ContentShared,
+    ContentView,
+    DatePick,
     Delay,
+    DeviceDocked,
     DeviceKeepAwake,
+    DeviceLock,
+    DeviceOrientation,
+    DeviceUnlocked,
+    DialNumber,
+    DialogChoice,
+    DialogConfirm,
+    DialogInput,
     ExpressionDecision,
     FlowBeginning,
     HttpRequest,
     Label,
     LogAppend,
     NotificationShow,
+    RingtoneGet,
+    RingtoneSet,
     ScreenBrightness,
     ScreenBrightnessSet,
     SmsSend,

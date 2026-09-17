@@ -170,6 +170,23 @@ reverse-engineering notes):
   1034  ComposeEmail         automate_flo/blocks/compose_email.py
   1035  ComposeMms           automate_flo/blocks/compose_mms.py
   1036  ComposeSms           automate_flo/blocks/compose_sms.py
+  1037  ContactQuery         automate_flo/blocks/contact_query.py
+  1038  ContactPick          automate_flo/blocks/contact_pick.py
+  1039  ContentRead          automate_flo/blocks/content_read.py
+  1040  ContentPick          automate_flo/blocks/content_pick.py
+  1041  ContentShared        automate_flo/blocks/content_shared.py
+  1042  ContentView          automate_flo/blocks/content_view.py
+  1043  DatePick             automate_flo/blocks/date_pick.py
+  1044  RingtoneGet          automate_flo/blocks/ringtone_get.py
+  1045  RingtoneSet          automate_flo/blocks/ringtone_set.py
+  1047  DeviceDocked         automate_flo/blocks/device_docked.py
+  1048  DeviceLock           automate_flo/blocks/device_lock.py
+  1049  DeviceOrientation    automate_flo/blocks/device_orientation.py
+  1050  DeviceUnlocked       automate_flo/blocks/device_unlocked.py
+  1051  DialNumber           automate_flo/blocks/dial_number.py
+  1052  DialogChoice         automate_flo/blocks/dialog_choice.py
+  1053  DialogConfirm        automate_flo/blocks/dialog_confirm.py
+  1054  DialogInput          automate_flo/blocks/dialog_input.py
   106   StringExpr (W)       automate_flo/base.py -- string literal expression wrapper
   104   DoubleExpr (J)       automate_flo/base.py -- double literal expression wrapper,
         plain 8-byte BE double, no length prefix (e.g. Delay's "duration")
