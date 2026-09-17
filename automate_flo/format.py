@@ -187,6 +187,9 @@ reverse-engineering notes):
   1052  DialogChoice         automate_flo/blocks/dialog_choice.py
   1053  DialogConfirm        automate_flo/blocks/dialog_confirm.py
   1054  DialogInput          automate_flo/blocks/dialog_input.py
+  1055  DictionaryPut        automate_flo/blocks/dictionary_put.py
+  1056  DictionaryRemove     automate_flo/blocks/dictionary_remove.py
+  1057  DurationPick         automate_flo/blocks/duration_pick.py
   106   StringExpr (W)       automate_flo/base.py -- string literal expression wrapper
   104   DoubleExpr (J)       automate_flo/base.py -- double literal expression wrapper,
         plain 8-byte BE double, no length prefix (e.g. Delay's "duration")

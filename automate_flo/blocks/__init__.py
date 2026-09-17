@@ -117,6 +117,9 @@ from .dial_number import DialNumber
 from .dialog_choice import DialogChoice
 from .dialog_confirm import DialogConfirm
 from .dialog_input import DialogInput
+from .dictionary_put import DictionaryPut
+from .dictionary_remove import DictionaryRemove
+from .duration_pick import DurationPick
 from .expression_decision import ExpressionDecision
 from .flow_beginning import FlowBeginning
 from .http_request import HttpRequest
@@ -239,6 +242,9 @@ ALL_BLOCKS = [
     DialogChoice,
     DialogConfirm,
     DialogInput,
+    DictionaryPut,
+    DictionaryRemove,
+    DurationPick,
     ExpressionDecision,
     FlowBeginning,
     HttpRequest,
