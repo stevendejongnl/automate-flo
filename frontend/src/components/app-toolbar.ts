@@ -73,12 +73,18 @@ export class AppToolbar extends LitElement {
 
   async _onFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    const bytes = await file.arrayBuffer();
-    const graph = await importFlow(bytes);
-    this.store.loadGraph(graph);
-    input.value = "";
+    this._errorMessage = null;
+    try {
+      const file = input.files?.[0];
+      if (!file) return;
+      const bytes = await file.arrayBuffer();
+      const graph = await importFlow(bytes);
+      this.store.loadGraph(graph);
+    } catch (error) {
+      this._errorMessage = error instanceof Error ? error.message : String(error);
+    } finally {
+      input.value = "";
+    }
   }
 
   async _onSave(): Promise<void> {
@@ -87,15 +93,19 @@ export class AppToolbar extends LitElement {
       return;
     }
     this._errorMessage = null;
-    const graph = this.store.toGraph();
-    const bytes = await exportFlow(graph);
-    const blob = new Blob([bytes], { type: "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "flow.flo";
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const graph = this.store.toGraph();
+      const bytes = await exportFlow(graph);
+      const blob = new Blob([bytes], { type: "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "flow.flo";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      this._errorMessage = error instanceof Error ? error.message : String(error);
+    }
   }
 }
 

@@ -68,12 +68,12 @@ describe("FlowCanvas", () => {
     expect(store.selectedNodeId).toBe(null);
   });
 
-  it("renders an edge-line for each edge in the store", async () => {
+  it("renders a connector line for each edge in the store", async () => {
     const n1 = store.addNode("Delay", 0, 0);
     const n2 = store.addNode("Delay", 6, 0);
     store.addEdge(n1, n2, "complete");
     await el.updateComplete;
-    expect(el.shadowRoot!.querySelectorAll("edge-line")).toHaveLength(1);
+    expect(el.shadowRoot!.querySelectorAll("svg.edges line")).toHaveLength(1);
   });
 
   it("updates the store when a flow-node dispatches flow-node-connected", async () => {

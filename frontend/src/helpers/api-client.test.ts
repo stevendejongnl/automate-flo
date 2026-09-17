@@ -29,8 +29,38 @@ describe("api-client", () => {
         };
         vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
 
-        await expect(fetchBlockSchemas()).rejects.toThrow("fetchBlockSchemas failed: 404");
+        await expect(fetchBlockSchemas()).rejects.toThrow("fetchBlockSchemas failed: HTTP 404");
         expect(fetch).toHaveBeenCalledWith("/api/blocks");
+    });
+
+    it("fetchBlockSchemas surfaces backend detail message when available", async () => {
+        const mockResponse = {
+            ok: false,
+            status: 400,
+            json: vi.fn().mockResolvedValue({ detail: "Unknown/unhandled type id 16 at byte 57" })
+        };
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
+
+        await expect(fetchBlockSchemas()).rejects.toThrow("fetchBlockSchemas failed: Unknown/unhandled type id 16 at byte 57");
+        expect(fetch).toHaveBeenCalledWith("/api/blocks");
+    });
+
+    it("importFlow surfaces backend detail message when available", async () => {
+        const mockResponse = {
+            ok: false,
+            status: 400,
+            json: vi.fn().mockResolvedValue({ detail: "Unknown/unhandled type id 16 at byte 57" })
+        };
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
+
+        await expect(importFlow(new ArrayBuffer(0))).rejects.toThrow("importFlow failed: Unknown/unhandled type id 16 at byte 57");
+        expect(fetch).toHaveBeenCalledWith("/api/flow/import", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/octet-stream"
+            },
+            body: new ArrayBuffer(0)
+        });
     });
 
     it("importFlow calls fetch with correct parameters and returns parsed JSON", async () => {

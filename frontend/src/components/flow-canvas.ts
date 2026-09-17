@@ -1,9 +1,8 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, svg } from "lit";
 import { cellToPixel, pixelToCell } from "../helpers/grid.js";
 import { inputAnchor, outputAnchor } from "../helpers/port-geometry.js";
 import { getBlockSchemas } from "../helpers/schema-cache.js";
 import "./flow-node.js";
-import "./edge-line.js";
 import { FlowStore } from "../helpers/flow-store.js";
 import type { BlockSchema, BlockCategory, GraphNode, GraphEdge } from "../types.js";
 
@@ -92,7 +91,7 @@ export class FlowCanvas extends LitElement {
     const toPos = { x: cellToPixel(toNode.x), y: cellToPixel(toNode.y) };
     const from = outputAnchor(fromPos, edge.kind, this._categoryFor(fromNode.type));
     const to = inputAnchor(toPos);
-    return html`<edge-line .from=${from} .to=${to}></edge-line>`;
+    return svg`<line x1=${from.x} y1=${from.y} x2=${to.x} y2=${to.y} stroke="#94a3b8" stroke-width="2"></line>`;
   }
 
   render() {

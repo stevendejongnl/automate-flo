@@ -44,7 +44,7 @@ export class FlowPort extends LitElement {
 
   _onPointerUp(event: PointerEvent): void {
     window.removeEventListener('pointerup', this._onPointerUp);
-    const dropEl = document.elementFromPoint(event.clientX, event.clientY);
+    const dropEl = deepElementFromPoint(event.clientX, event.clientY);
     if (!dropEl) return;
     const targetFlowNode = findFlowNodeAncestor(dropEl);
     if (!targetFlowNode) return;
@@ -71,6 +71,16 @@ function findFlowNodeAncestor(el: Element): Element | null {
     node = root instanceof ShadowRoot ? root.host : null;
   }
   return null;
+}
+
+function deepElementFromPoint(x: number, y: number): Element | null {
+  let el: Element | null = document.elementFromPoint(x, y);
+  while (el && el.shadowRoot) {
+    const nested = el.shadowRoot.elementFromPoint(x, y);
+    if (!nested || nested === el) break;
+    el = nested;
+  }
+  return el;
 }
 
 if (!customElements.get("flow-port")) {

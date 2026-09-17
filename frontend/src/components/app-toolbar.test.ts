@@ -108,4 +108,30 @@ describe("AppToolbar", () => {
     expect(exportFlow).not.toHaveBeenCalled();
     expect(el.shadowRoot!.querySelector(".error")).not.toBeNull();
   });
+
+  it("shows an inline error message when importing a file fails", async () => {
+    mockGetBlockSchemas.mockResolvedValue([]);
+    document.body.appendChild(el);
+    await el.updateComplete;
+    vi.mocked(importFlow).mockRejectedValue(new Error("importFlow failed: Unknown/unhandled type id 16 at byte 57"));
+    const input = el.renderRoot.querySelector<HTMLInputElement>("input[type='file']")!;
+    Object.defineProperty(input, "files", { value: [{ arrayBuffer: () => Promise.resolve(new Uint8Array([1, 2, 3]).buffer) }], configurable: true });
+    input.dispatchEvent(new Event("change"));
+    await new Promise(r => setTimeout(r, 0));
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector(".error")!.textContent).toContain("Unknown/unhandled type id 16 at byte 57");
+    expect(store.nodes).toEqual([]);
+  });
+
+  it("shows an inline error message when saving fails", async () => {
+    mockGetBlockSchemas.mockResolvedValue([]);
+    document.body.appendChild(el);
+    await el.updateComplete;
+    store.addNode("Delay", 0, 0);
+    vi.mocked(exportFlow).mockRejectedValue(new Error("exportFlow failed: some backend error"));
+    [...el.shadowRoot!.querySelectorAll("button")].find(b => b.textContent === "Save")!.click();
+    await new Promise(r => setTimeout(r, 0));
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector(".error")!.textContent).toContain("exportFlow failed: some backend error");
+  });
 });
