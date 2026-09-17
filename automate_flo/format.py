@@ -159,6 +159,12 @@ reverse-engineering notes):
   1372  BluetoothGattRead    automate_flo/blocks/bluetooth_gatt_read.py
   1022  BroadcastReceive     automate_flo/blocks/broadcast_receive.py
   1023  BroadcastSend        automate_flo/blocks/broadcast_send.py
+  1024  CallAnswer           automate_flo/blocks/call_answer.py
+  1025  CallEnd              automate_flo/blocks/call_end.py
+  1026  CallIncoming         automate_flo/blocks/call_incoming.py
+  1027  CallNumber           automate_flo/blocks/call_number.py
+  1028  CallOutgoing         automate_flo/blocks/call_outgoing.py
+  1029  CallState            automate_flo/blocks/call_state.py
   106   StringExpr (W)       automate_flo/base.py -- string literal expression wrapper
   104   DoubleExpr (J)       automate_flo/base.py -- double literal expression wrapper,
         plain 8-byte BE double, no length prefix (e.g. Delay's "duration")

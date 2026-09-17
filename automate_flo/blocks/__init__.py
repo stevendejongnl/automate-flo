@@ -86,6 +86,12 @@ from .bluetooth_gatt_read import BluetoothGattRead
 from .bluetooth_set_state import BluetoothSetState
 from .broadcast_receive import BroadcastReceive
 from .broadcast_send import BroadcastSend
+from .call_answer import CallAnswer
+from .call_end import CallEnd
+from .call_incoming import CallIncoming
+from .call_number import CallNumber
+from .call_outgoing import CallOutgoing
+from .call_state import CallState
 from .car_mode_enabled import CarModeEnabled
 from .clipboard_get import ClipboardGet
 from .clipboard_set import ClipboardSet
@@ -180,6 +186,12 @@ ALL_BLOCKS = [
     BluetoothSetState,
     BroadcastReceive,
     BroadcastSend,
+    CallAnswer,
+    CallEnd,
+    CallIncoming,
+    CallNumber,
+    CallOutgoing,
+    CallState,
     CarModeEnabled,
     ClipboardGet,
     ClipboardSet,
