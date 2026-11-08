@@ -40,11 +40,12 @@ class Block:
         self.on_complete = on_complete
 
     def dedup_key(self):
-        """Identity-based by default -- every block is a distinct graph
-        node. Only the value-typed expression wrappers below override
-        this, to intern by value (so e.g. the same package name passed to
-        two different blocks collapses to one back-referenced object,
-        matching real Automate-exported flows)."""
+        """Identity-based -- every node is a distinct graph object.
+        Real Automate exports only back-reference an expression when
+        the app reuses one operand *object*, never by value (verified
+        on real-world exports: identical separately-created literals
+        are written out in full), so identity is the faithful model
+        for every node type, literals included."""
         return ("id", id(self))
 
     def write_fields(self, writer):
@@ -142,7 +143,7 @@ class StringExpr:
         self.value = value
 
     def dedup_key(self):
-        return ("str", self.value)
+        return ("id", id(self))
 
     def write_fields(self, writer):
         writer.w.write_utf(self.value)
@@ -164,7 +165,7 @@ class VariableExpr:
         self.name = name
 
     def dedup_key(self):
-        return ("var", self.name)
+        return ("id", id(self))
 
     def write_fields(self, writer):
         writer.w.write_utf(self.name)
@@ -185,7 +186,7 @@ class DoubleExpr:
         self.value = float(value)
 
     def dedup_key(self):
-        return ("dbl", self.value)
+        return ("id", id(self))
 
     def write_fields(self, writer):
         writer.w.write_double(self.value)
@@ -210,7 +211,7 @@ class BooleanExpr:
         self.value = bool(value)
 
     def dedup_key(self):
-        return ("bool", self.value)
+        return ("id", id(self))
 
     def write_fields(self, writer):
         writer.w.write_bool(self.value)

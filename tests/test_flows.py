@@ -10,6 +10,7 @@ from automate_flo import (
     CarModeEnabled,
     Delay,
     FlowBeginning,
+    StringExpr,
     parse_flow,
     write_flow,
 )
@@ -41,11 +42,16 @@ def test_roundtrip_flow_beginning_app_kill_byte_exact():
 
 
 def test_android_auto_app_toggle_flow_self_consistent():
+    # One shared StringExpr object for the package name, referenced from
+    # both blocks: that sharing is what real Automate exports encode as a
+    # back-reference (the fixture has one at the second use), and the
+    # writer dedups by object identity -- see base.py.
+    pkg = StringExpr(PKG)
     begin = FlowBeginning(stmt_id=1, cell_x=0, cell_y=0, title="")
-    start = ActivityStart(stmt_id=2, package_name=PKG, cell_x=0, cell_y=6)
+    start = ActivityStart(stmt_id=2, package_name=pkg, cell_x=0, cell_y=6)
     delay = Delay(stmt_id=3, seconds=2.0, cell_x=0, cell_y=12)
     car = CarModeEnabled(stmt_id=4, cell_x=0, cell_y=18)
-    kill = AppKill(stmt_id=5, package_name=PKG, cell_x=4, cell_y=24)
+    kill = AppKill(stmt_id=5, package_name=pkg, cell_x=4, cell_y=24)
 
     begin.on_complete = start
     start.on_complete = delay

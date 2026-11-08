@@ -29,7 +29,7 @@ class ActivityStart(Action):
 
     def write_fields(self, writer):
         super().write_fields(writer)
-        writer.write_object(StringExpr(self.package_name))
+        writer.write_object(writer.wrap_str(self.package_name))
         writer.write_object(self.class_name)
         writer.write_object(self.action)
         writer.write_object(self.uri)

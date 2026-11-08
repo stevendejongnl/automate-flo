@@ -13,7 +13,7 @@ class AppKill(Action):
 
     def write_fields(self, writer):
         super().write_fields(writer)
-        writer.write_object(StringExpr(self.package_name))
+        writer.write_object(writer.wrap_str(self.package_name))
 
     def read_fields(self, reader):
         super().read_fields(reader)

@@ -121,7 +121,14 @@ from .dictionary_put import DictionaryPut
 from .dictionary_remove import DictionaryRemove
 from .duration_pick import DurationPick
 from .expression_decision import ExpressionDecision
+from .file_copy import FileCopy
+from .file_delete import FileDelete
+from .file_exists import FileExists
+from .file_list import FileList
+from .file_make_directory import FileMakeDirectory
 from .flow_beginning import FlowBeginning
+from .for_each import ForEach
+from .fork import Fork
 from .http_request import HttpRequest
 from .label import Label
 from .log_append import LogAppend
@@ -131,11 +138,13 @@ from .ringtone_set import RingtoneSet
 from .screen_brightness import ScreenBrightness
 from .screen_brightness_set import ScreenBrightnessSet
 from .sms_send import SmsSend
+from .time_window import TimeWindow
 from .toast_show import ToastShow
 from .variable_assign import VariableAssign
 from .wifi_enabled import WifiEnabled
 from .wifi_network_connected import WifiNetworkConnected
 from .wifi_set_state import WifiSetState
+from .zip_compress import ZipCompress
 
 ALL_BLOCKS = [
     AccessibilityButton,
@@ -246,7 +255,14 @@ ALL_BLOCKS = [
     DictionaryRemove,
     DurationPick,
     ExpressionDecision,
+    FileCopy,
+    FileDelete,
+    FileExists,
+    FileList,
+    FileMakeDirectory,
     FlowBeginning,
+    ForEach,
+    Fork,
     HttpRequest,
     Label,
     LogAppend,
@@ -256,11 +272,13 @@ ALL_BLOCKS = [
     ScreenBrightness,
     ScreenBrightnessSet,
     SmsSend,
+    TimeWindow,
     ToastShow,
     VariableAssign,
     WifiEnabled,
     WifiNetworkConnected,
     WifiSetState,
+    ZipCompress,
 ]
 
 __all__ = [cls.__name__ for cls in ALL_BLOCKS] + ["ALL_BLOCKS"]

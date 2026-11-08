@@ -15,13 +15,22 @@ class VariableAssign(Action):
     def write_fields(self, writer):
         super().write_fields(writer)
         writer.write_object(writer.wrap_str(self.value))
-        writer.write_object(VariableExpr(self.variable_name))
+        # Pass an already-built VariableExpr through as-is: real flows
+        # back-reference one shared variable object from several Assign
+        # blocks, and re-constructing here would silently drop that
+        # sharing on a parse->write round trip. Plain strings (the
+        # common hand-built case) are wrapped as before.
+        if self.variable_name is None or hasattr(self.variable_name, "type_id"):
+            writer.write_object(self.variable_name)
+        else:
+            writer.write_object(VariableExpr(self.variable_name))
 
     def read_fields(self, reader):
         super().read_fields(reader)
         self.value = reader.read_object()
-        var = reader.read_object()
-        self.variable_name = var.name if var is not None else None
+        # Keep the parsed object (not just its name) so a shared
+        # variable reference survives a round trip.
+        self.variable_name = reader.read_object()
 
     def describe(self):
         return f"VariableAssign(id={self.stmt_id}, variable={self.variable_name!r})"

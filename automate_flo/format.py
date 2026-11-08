@@ -214,18 +214,56 @@ confirmed accepted (Automate's own "Import ... flow?" dialog, not a
 rejection); see tests/test_emulator_import.py. FlowBeginning->AppKill is
 additionally byte-exact-verified against an Automate-exported sample
 built entirely by hand in the app UI, independent of this library.
+
+The following types were added later, decoded from two real-world flow
+exports (format versions 114 and 115 of the same flow, one before and
+one after an in-app edit) instead of the fixture+device process above.
+Their wire layouts are cross-verified between the two files, and
+byte-exact parse/write round-trip is tested against those files
+(tests/test_real_flows.py, env-gated), but they have not yet been
+import-verified on a device nor corroborated against the live block
+editor -- per-block docstrings say which field names are confirmed
+versus inferred:
+
+  1060  Fork                 automate_flo/blocks/fork.py
+  1062  FileDelete           automate_flo/blocks/file_delete.py
+  1063  FileCopy             automate_flo/blocks/file_copy.py
+  1064  FileList             automate_flo/blocks/file_list.py
+  1066  FileMakeDirectory    automate_flo/blocks/file_make_directory.py
+  1073  ForEach              automate_flo/blocks/for_each.py
+  1151  ZipCompress          automate_flo/blocks/zip_compress.py
+  1169  TimeWindow            automate_flo/blocks/time_window.py
+  1174  FileExists            automate_flo/blocks/file_exists.py
+
+Expression node types beyond the four literal wrappers live in
+automate_flo/expressions.py: 16 IntExpr, 101 EnumDoubleExpr, 119
+ConcatExpr (the ++ chain: N consecutive markers then N+1 operands,
+every marker a first-seen object), 120 TernaryExpr, 124 GreaterExpr,
+126 LengthExpr, 137 IndexExpr, 138 MinusExpr, 322 MatchesExpr, 327
+NumberFormatExpr, 329 ReplaceAllExpr, 333 SplitExpr, 347 StorageExpr,
+371 SortExpr, 383 SliceExpr.
+
+Two further format facts from the same exports, now handled: Automate
+wrote format versions 114 and 115 with no layout differences observed;
+and real files end with a short trailing footer after the object list
+-- three back-references to the three highest statement ids in both
+files observed (possibly a recently-created stack; purpose not fully
+understood). parse_flow captures it as result["trailing"] and
+write_flow re-emits it via trailing=b"".
 """
 
 import struct
 
 from .base import BooleanExpr, DoubleExpr, StringExpr, VariableExpr
 from .blocks import ALL_BLOCKS
+from .expressions import EXPRESSION_NODES
 
 MAGIC = 0x4C41466C
 VERSION = 114
 
 REGISTRY = {cls.type_id: cls for cls in
-            ALL_BLOCKS + [StringExpr, VariableExpr, DoubleExpr, BooleanExpr]}
+            ALL_BLOCKS + [StringExpr, VariableExpr, DoubleExpr, BooleanExpr]
+            + EXPRESSION_NODES}
 
 
 def _zz_enc(n: int) -> int:
@@ -337,14 +375,17 @@ class FlowWriter:
         self.w = w
         self.seen = {}  # dedup key -> index in seen-list (0-indexed)
         self.next_index = 0
+        self.keepalive = []  # objects whose ids are embedded in seen keys
 
     @staticmethod
     def wrap_str(value):
-        """Optional string-valued field: pass through None/StringExpr/
-        VariableExpr as-is, or wrap a plain str as StringExpr -- lets
-        callers write Delay("...", seconds=2) style plain values without
-        constructing StringExpr by hand for every text field."""
-        if value is None or isinstance(value, (StringExpr, VariableExpr)):
+        """Optional string-valued field: pass through None or any
+        already-built expression node (StringExpr, VariableExpr,
+        EnumDoubleExpr, ... -- anything with a type_id), or wrap a
+        plain str as StringExpr -- lets callers write
+        Delay("...", seconds=2) style plain values without constructing
+        StringExpr by hand for every text field."""
+        if value is None or hasattr(value, "type_id"):
             return value
         return StringExpr(value)
 
@@ -366,9 +407,10 @@ class FlowWriter:
 
     @staticmethod
     def wrap_double(value):
-        """Optional numeric field: pass through None/DoubleExpr as-is, or
-        wrap a plain Python int/float as DoubleExpr."""
-        if value is None or isinstance(value, DoubleExpr):
+        """Optional numeric field: pass through None or any already-built
+        expression node (DoubleExpr, EnumDoubleExpr, ... -- anything with
+        a type_id), or wrap a plain Python int/float as DoubleExpr."""
+        if value is None or hasattr(value, "type_id"):
             return value
         return DoubleExpr(value)
 
@@ -383,22 +425,44 @@ class FlowWriter:
             return
         self.seen[key] = self.next_index
         self.next_index += 1
+        # Keep the object alive for as long as its dedup key is in use:
+        # identity-based keys embed id(obj), and a garbage-collected
+        # object's id can be reused by a later temporary (observed with
+        # wrap_double/wrap_str temporaries), which would make a distinct
+        # object collide with the dead one's key and emit a bogus
+        # back-reference instead of being written out in full.
+        self.keepalive.append(obj)
         self.w.write_svarint(obj.type_id)
         obj.write_fields(self)
 
 
-def write_flow(blocks, next_id):
-    """blocks: list of all top-level Block objects (E0.f14766Z order --
-    normally just [flow_beginning] since everything else is reachable via
-    onComplete chains, matching what a real Automate export does)."""
+def write_flow(blocks, next_id, version=VERSION, trailing=b""):
+    """blocks: top-level object entries in E0.f14766Z order -- either a
+    hand-built list (normally just [flow_beginning] since everything
+    else is reachable via onComplete chains) or, verbatim, the list
+    parse_flow returns: real Automate exports write the nested tree
+    first, then additional top-level entries that are back-references
+    to already-written blocks or nulls, and write_object handles all
+    three kinds.
+
+    next_id: the last-assigned statement id (what real exports store
+    in the header -- the highest stmt id used in the flow).
+
+    version: the format version to write. Automate has been observed
+    writing 114 and 115, with no layout differences between them.
+
+    trailing: opaque footer bytes re-emitted verbatim after the object
+    list (see parse_flow). Pass what parse_flow returned to round-trip
+    a real file byte-exactly."""
     w = ByteWriter()
     w.write_i32(MAGIC)
-    w.write_i16(VERSION)
+    w.write_i16(version)
     w.write_svarint(next_id)
     w.write_uvarint(len(blocks))
     fw = FlowWriter(w)
     for b in blocks:
         fw.write_object(b)
+    w.write_bytes(trailing)
     return bytes(w.buf)
 
 
@@ -433,9 +497,13 @@ def parse_flow(data: bytes):
     count = r.read_uvarint()
     fr = FlowReader(r)
     blocks = [fr.read_object() for _ in range(count)]
-    if not r.eof():
-        raise ValueError(f"Trailing bytes after parse: {data[r.pos:].hex()}")
-    return {"version": version, "next_id": next_id, "blocks": blocks}
+    trailing = data[r.pos:]
+    return {
+        "version": version,
+        "next_id": next_id,
+        "blocks": blocks,
+        "trailing": trailing,
+    }
 
 
 def describe(blocks):
